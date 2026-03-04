@@ -4,11 +4,26 @@ import dotenv from "dotenv";
 // Cargar variables de entorno
 dotenv.config();
 
+function isValidUrl(value: string): boolean {
+  try {
+    // eslint-disable-next-line no-new
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Definir el esquema de configuración (equivalente a BaseSettings de Pydantic)
 const configSchema = z.object({
   STEAM_API_KEY: z.string().min(1, "STEAM_API_KEY es requerida"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  APP_URL: z.string().url().optional(),
+  APP_URL: z
+    .string()
+    .optional()
+    .refine((val) => !val || isValidUrl(val), {
+      message: "APP_URL debe ser una URL válida",
+    }),
 });
 
 // Validar y exportar la configuración

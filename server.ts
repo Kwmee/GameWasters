@@ -1,6 +1,8 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import passport from "passport";
+import path from "path";
+import { fileURLToPath } from "url";
 import { config, PORT } from "./src/config";
 import { steamService } from "./src/services/steamService";
 import { configureSteamAuth } from "./src/auth/steamStrategy";
@@ -111,13 +113,24 @@ async function startServer() {
     });
   });
 
-  // Vite middleware for development
+  // Vite middleware para desarrollo o estáticos compilados para producción
   if (config.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
+  } else {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const distPath = path.resolve(__dirname, "dist");
+
+    app.use(express.static(distPath));
+
+    // SPA: devolver siempre index.html para cualquier ruta no-API
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
