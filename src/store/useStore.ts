@@ -11,8 +11,10 @@ export interface Deal {
 interface AppState {
   isAuthenticated: boolean;
   hashedSteamId: string | null;
+  steamName: string | null;
+  steamAvatar: string | null;
   deals: Deal[];
-  login: (hashedSteamId: string) => void;
+  login: (hashedSteamId: string, steamName?: string, steamAvatar?: string) => void;
   logout: () => void;
   setDeals: (deals: Deal[]) => void;
 }
@@ -20,8 +22,10 @@ interface AppState {
 export const useStore = create<AppState>((set) => ({
   isAuthenticated: false,
   hashedSteamId: null,
+  steamName: null,
+  steamAvatar: null,
   deals: [],
-  login: (hashedSteamId) => set({ isAuthenticated: true, hashedSteamId }),
-  logout: () => set({ isAuthenticated: false, hashedSteamId: null, deals: [] }),
+  login: (hashedSteamId, steamName, steamAvatar) => set({ isAuthenticated: true, hashedSteamId, steamName, steamAvatar }),
+  logout: () => set({ isAuthenticated: false, hashedSteamId: null, steamName: null, steamAvatar: null, deals: [] }),
   setDeals: (deals) => set({ deals }),
 }));

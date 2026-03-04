@@ -29,7 +29,7 @@ export default function App() {
       }
       
       if (event.data?.type === 'STEAM_AUTH_SUCCESS' && event.data?.steamId) {
-        login(event.data.steamId);
+        login(event.data.steamId, event.data.steamName, event.data.steamAvatar);
       }
     };
     

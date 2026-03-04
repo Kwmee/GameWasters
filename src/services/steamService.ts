@@ -66,9 +66,9 @@ export class SteamService {
       // Si estamos usando la key de prueba, devolvemos datos mockeados
       if (this.apiKey === 'mock_steam_key') {
         const mockGames: OwnedGame[] = [
-          { appid: 1091500, name: "Cyberpunk 2077", playtime_forever: 3600 },
-          { appid: 367520, name: "Hollow Knight", playtime_forever: 1200 },
-          { appid: 1245620, name: "Elden Ring", playtime_forever: 5000 }
+          { appid: 1091500, name: "Cyberpunk 2077", playtime_forever: 3600, playtime_2weeks: 0 },
+          { appid: 367520, name: "Hollow Knight", playtime_forever: 1200, playtime_2weeks: 0 },
+          { appid: 1245620, name: "Elden Ring", playtime_forever: 5000, playtime_2weeks: 0 }
         ];
         cache.set(cacheKey, { data: mockGames, timestamp: Date.now() });
         return mockGames;
@@ -96,6 +96,40 @@ export class SteamService {
       
     } catch (error) {
       console.error(`[SteamService] Error obteniendo juegos para ${steamId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtiene el perfil público del usuario (nombre y avatar)
+   */
+  public async getPlayerSummary(steamId: string) {
+    try {
+      if (this.apiKey === 'mock_steam_key') {
+        return { personaname: 'Usuario Mock', avatarfull: 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg' };
+      }
+      const url = `${this.baseUrl}/ISteamUser/GetPlayerSummaries/v0002/?key=${this.apiKey}&steamids=${steamId}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.response.players[0] || null;
+    } catch (error) {
+      console.error(`[SteamService] Error obteniendo perfil para ${steamId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtiene las ofertas destacadas actuales de la tienda de Steam
+   */
+  public async getSpecials(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.storeUrl}/featuredcategories/`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.specials?.items || [];
+    } catch (error) {
+      console.error(`[SteamService] Error obteniendo ofertas destacadas:`, error);
       return [];
     }
   }

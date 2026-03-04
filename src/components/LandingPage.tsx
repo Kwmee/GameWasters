@@ -4,12 +4,16 @@ import { useStore } from '../store/useStore';
 import { Gamepad2, TrendingDown, Sparkles, Clock } from 'lucide-react';
 
 export default function LandingPage() {
-  const { isAuthenticated, hashedSteamId, deals, setDeals } = useStore();
+  const { isAuthenticated, hashedSteamId, steamName, steamAvatar, deals, setDeals } = useStore();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/deals')
+    const url = isAuthenticated && hashedSteamId 
+      ? `/api/deals?steamId=${hashedSteamId}` // En un entorno real, usaríamos el ID real o lo sacaríamos de la sesión del servidor
+      : '/api/deals';
+      
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -17,7 +21,7 @@ export default function LandingPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [setDeals]);
+  }, [setDeals, isAuthenticated, hashedSteamId]);
 
   return (
     <div className="min-h-screen bg-[#1b2838] text-[#c7d5e0] font-sans">
@@ -30,7 +34,8 @@ export default function LandingPage() {
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
-              <span className="text-sm bg-[#2a475e] px-3 py-1 rounded-full text-[#66c0f4]">User: {hashedSteamId}</span>
+              {steamAvatar && <img src={steamAvatar} alt="Avatar" className="w-8 h-8 rounded-full border border-[#66c0f4]" />}
+              <span className="text-sm font-medium text-white">{steamName || hashedSteamId}</span>
               <button onClick={() => useStore.getState().logout()} className="text-sm text-gray-400 hover:text-white transition-colors">Cerrar sesión</button>
             </div>
           ) : (

@@ -1,8 +1,15 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 // Cargar variables de entorno
 dotenv.config();
+if (fs.existsSync('.env.local')) {
+  const envConfig = dotenv.parse(fs.readFileSync('.env.local'));
+  for (const k in envConfig) {
+    process.env[k] = envConfig[k];
+  }
+}
 
 // Definir el esquema de configuración (equivalente a BaseSettings de Pydantic)
 const configSchema = z.object({

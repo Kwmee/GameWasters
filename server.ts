@@ -77,6 +77,16 @@ async function startServer() {
     // Pseudonimización del SteamID por privacidad
     const hashedSteamId = steamService.hashSteamId(realSteamId || '');
 
+    // Guardar el ID real en la sesión para poder hacer llamadas a la API
+    if (req.session) {
+      (req.session as any).realSteamId = realSteamId;
+    }
+
+    // Obtener el perfil real del usuario (Nombre y Avatar)
+    const profile = await steamService.getPlayerSummary(realSteamId || '');
+    const steamName = profile?.personaname || 'Usuario de Steam';
+    const steamAvatar = profile?.avatarfull || '';
+
     // Ejecutar tarea en segundo plano sin bloquear la respuesta (equivalente a BackgroundTasks)
     syncUserLibrary(hashedSteamId, realSteamId || '').catch(console.error);
 
@@ -97,7 +107,12 @@ async function startServer() {
           </div>
           <script>
             if (window.opener) {
-              window.opener.postMessage({ type: 'STEAM_AUTH_SUCCESS', steamId: '${hashedSteamId}' }, '*');
+              window.opener.postMessage({ 
+                type: 'STEAM_AUTH_SUCCESS', 
+                steamId: '${hashedSteamId}',
+                steamName: '${steamName.replace(/'/g, "\\'")}',
+                steamAvatar: '${steamAvatar}'
+              }, '*');
               setTimeout(() => window.close(), 1500);
             } else {
               window.location.href = '/?steamId=${hashedSteamId}';
@@ -109,18 +124,62 @@ async function startServer() {
   });
 
   // Endpoint de Ofertas
-  app.get("/api/deals", (req, res) => {
-    res.json({
-      success: true,
-      data: [
-        { steamId: "1091500", title: "Cyberpunk 2077", currentPrice: 29.99, discount: 50, image: "https://picsum.photos/seed/cyberpunk/400/200" },
-        { steamId: "367520", title: "Hollow Knight", currentPrice: 7.49, discount: 50, image: "https://picsum.photos/seed/hollowknight/400/200" },
-        { steamId: "1245620", title: "Elden Ring", currentPrice: 39.99, discount: 33, image: "https://picsum.photos/seed/eldenring/400/200" },
-        { steamId: "1086940", title: "Baldur's Gate 3", currentPrice: 53.99, discount: 10, image: "https://picsum.photos/seed/bg3/400/200" },
-        { steamId: "1145360", title: "Hades", currentPrice: 12.49, discount: 50, image: "https://picsum.photos/seed/hades/400/200" },
-        { steamId: "413150", title: "Stardew Valley", currentPrice: 11.99, discount: 20, image: "https://picsum.photos/seed/stardew/400/200" }
-      ]
-    });
+  app.get("/api/deals", async (req, res) => {
+    // Usar el ID real guardado en la sesión, o el ID genérico si no hay sesión
+    const realSteamId = (req.session as any)?.realSteamId;
+    const isAuth = req.query.steamId as string;
+    
+    try {
+      // 1. Obtener las ofertas destacadas reales de la tienda de Steam
+      const specials = await steamService.getSpecials();
+      // Extraer IDs y eliminar duplicados (un juego puede estar en varias categorías)
+      let recommendedAppIds = Array.from(new Set(
+        specials.map((item: any) => item.id).filter((id: any) => id != null)
+      )) as number[];
+
+      // 2. Si el usuario está logueado, filtramos los juegos que YA TIENE
+      if (isAuth && realSteamId) {
+        const ownedGames = await steamService.getOwnedGames(realSteamId);
+        const ownedAppIds = new Set(ownedGames.map(g => g.appid));
+        
+        // Filtramos las ofertas para mostrar solo juegos que NO posee
+        recommendedAppIds = recommendedAppIds.filter((id: number) => !ownedAppIds.has(id));
+      }
+
+      // Tomamos las 12 mejores ofertas
+      recommendedAppIds = recommendedAppIds.slice(0, 12);
+
+      if (recommendedAppIds.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // 3. Obtener precios reales y actualizados de la tienda de Steam
+      const prices = await steamService.getGamePrices(recommendedAppIds);
+      
+      // 4. Formatear la respuesta para el frontend
+      const deals = recommendedAppIds.map((appId: number) => {
+        const priceInfo = prices[appId];
+        const specialItem = specials.find((s: any) => s.id === appId);
+        
+        // Steam devuelve los precios en centavos (ej. 1999 = $19.99)
+        const currentPrice = priceInfo ? priceInfo.final / 100 : (specialItem?.final_price / 100 || 0);
+        const discount = priceInfo ? priceInfo.discount_percent : (specialItem?.discount_percent || 0);
+        const title = specialItem?.name || `Juego ${appId}`;
+        
+        return {
+          steamId: appId.toString(),
+          title: title,
+          currentPrice: currentPrice,
+          discount: discount,
+          image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`
+        };
+      });
+
+      res.json({ success: true, data: deals });
+    } catch (error) {
+      console.error("Error obteniendo ofertas reales:", error);
+      res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
   });
 
   // Vite middleware for development
