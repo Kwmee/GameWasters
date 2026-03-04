@@ -3,6 +3,9 @@ import { createServer as createViteServer } from "vite";
 import session from "express-session";
 import { config } from "./src/config";
 import { steamService } from "./src/services/steamService";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
 
 async function startServer() {
   const app = express();
@@ -18,6 +21,21 @@ async function startServer() {
       sameSite: 'lax',
     }
   }));
+
+  // Middleware para verificar JWT
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        (req as any).user = decoded;
+      } catch (err) {
+        console.error("Error verificando JWT:", err);
+      }
+    }
+    next();
+  });
 
   // Simulación de BackgroundTask de FastAPI en Node.js
   const syncUserLibrary = async (hashedSteamId: string, realSteamId: string) => {
@@ -87,6 +105,13 @@ async function startServer() {
     const steamName = profile?.personaname || 'Usuario de Steam';
     const steamAvatar = profile?.avatarfull || '';
 
+    // Generar JWT
+    const token = jwt.sign(
+      { steamId: hashedSteamId, realSteamId: realSteamId },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     // Ejecutar tarea en segundo plano sin bloquear la respuesta (equivalente a BackgroundTasks)
     syncUserLibrary(hashedSteamId, realSteamId || '').catch(console.error);
 
@@ -111,7 +136,8 @@ async function startServer() {
                 type: 'STEAM_AUTH_SUCCESS', 
                 steamId: '${hashedSteamId}',
                 steamName: '${steamName.replace(/'/g, "\\'")}',
-                steamAvatar: '${steamAvatar}'
+                steamAvatar: '${steamAvatar}',
+                token: '${token}'
               }, '*');
               setTimeout(() => window.close(), 1500);
             } else {
@@ -125,8 +151,8 @@ async function startServer() {
 
   // Endpoint de Ofertas
   app.get("/api/deals", async (req, res) => {
-    // Usar el ID real guardado en la sesión, o el ID genérico si no hay sesión
-    const realSteamId = (req.session as any)?.realSteamId;
+    // Usar el ID real guardado en el JWT, o en la sesión, o el ID genérico si no hay sesión
+    const realSteamId = (req as any).user?.realSteamId || (req.session as any)?.realSteamId;
     const isAuth = req.query.steamId as string;
     
     try {
@@ -137,13 +163,60 @@ async function startServer() {
         specials.map((item: any) => item.id).filter((id: any) => id != null)
       )) as number[];
 
-      // 2. Si el usuario está logueado, filtramos los juegos que YA TIENE
+      // 2. Si el usuario está logueado, filtramos los juegos que YA TIENE y priorizamos por géneros
       if (isAuth && realSteamId) {
         const ownedGames = await steamService.getOwnedGames(realSteamId);
         const ownedAppIds = new Set(ownedGames.map(g => g.appid));
         
         // Filtramos las ofertas para mostrar solo juegos que NO posee
         recommendedAppIds = recommendedAppIds.filter((id: number) => !ownedAppIds.has(id));
+
+        // --- Lógica de priorización por géneros ---
+        // 2.1 Obtener los juegos más jugados para calcular los géneros favoritos
+        const topGames = ownedGames
+          .filter(g => g.playtime_forever > 0)
+          .sort((a, b) => b.playtime_forever - a.playtime_forever)
+          .slice(0, 20);
+
+        const appIds = topGames.map(g => g.appid);
+        const appDetails = await steamService.getAppDetails(appIds);
+
+        const genrePlaytime: Record<string, number> = {};
+        
+        topGames.forEach(game => {
+          const details = appDetails[game.appid];
+          if (details && details.genres) {
+            details.genres.forEach((genre: any, index: number) => {
+              const weight = index === 0 ? 1 : 0.5;
+              genrePlaytime[genre.description] = (genrePlaytime[genre.description] || 0) + (game.playtime_forever * weight);
+            });
+          }
+        });
+
+        const topGenres = Object.entries(genrePlaytime)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(entry => entry[0]);
+
+        // 2.2 Ordenar las recomendaciones basándonos en si coinciden con los top géneros
+        if (topGenres.length > 0) {
+          // Obtenemos los géneros de las recomendaciones
+          const recommendedDetails = await steamService.getAppDetails(recommendedAppIds.slice(0, 30)); // Limitamos para no saturar
+          
+          recommendedAppIds.sort((a, b) => {
+            const detailsA = recommendedDetails[a];
+            const detailsB = recommendedDetails[b];
+            
+            const genresA = detailsA?.genres?.map((g: any) => g.description) || [];
+            const genresB = detailsB?.genres?.map((g: any) => g.description) || [];
+            
+            // Calculamos un "score" basado en cuántos géneros coinciden con los favoritos
+            const scoreA = genresA.filter((g: string) => topGenres.includes(g)).length;
+            const scoreB = genresB.filter((g: string) => topGenres.includes(g)).length;
+            
+            return scoreB - scoreA; // Orden descendente
+          });
+        }
       }
 
       // Tomamos las 12 mejores ofertas
@@ -178,6 +251,69 @@ async function startServer() {
       res.json({ success: true, data: deals });
     } catch (error) {
       console.error("Error obteniendo ofertas reales:", error);
+      res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
+  });
+
+  // Endpoint de Análisis de Géneros
+  app.get("/api/user/top-genres", async (req, res) => {
+    const realSteamId = (req as any).user?.realSteamId;
+    if (!realSteamId) {
+      return res.status(401).json({ success: false, error: "No autorizado" });
+    }
+
+    try {
+      // 1. Obtener la biblioteca del usuario
+      const ownedGames = await steamService.getOwnedGames(realSteamId);
+      
+      if (ownedGames.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // 2. Tomar los juegos más jugados para no saturar la API (ej. top 20)
+      const topGames = ownedGames
+        .filter(g => g.playtime_forever > 0)
+        .sort((a, b) => b.playtime_forever - a.playtime_forever)
+        .slice(0, 20);
+
+      const appIds = topGames.map(g => g.appid);
+      
+      // 3. Obtener detalles de la tienda para esos juegos (para extraer los géneros)
+      const appDetails = await steamService.getAppDetails(appIds);
+      
+      const genrePlaytime: Record<string, number> = {};
+      let totalPlaytime = 0;
+      
+      topGames.forEach(game => {
+        const details = appDetails[game.appid];
+        if (details && details.genres) {
+          totalPlaytime += game.playtime_forever;
+          details.genres.forEach((genre: any, index: number) => {
+            // Damos más peso al primer género de la lista
+            const weight = index === 0 ? 1 : 0.5;
+            genrePlaytime[genre.description] = (genrePlaytime[genre.description] || 0) + (game.playtime_forever * weight);
+          });
+        }
+      });
+
+      // Si por alguna razón no pudimos obtener géneros (ej. rate limit), usamos un fallback
+      if (Object.keys(genrePlaytime).length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // 4. Formatear y ordenar los resultados
+      const topGenres = Object.entries(genrePlaytime)
+        .map(([name, playtime]) => ({
+          name,
+          playtime: Math.round(playtime / 60), // Convertir minutos a horas
+          percentage: Math.min(100, Math.round((playtime / totalPlaytime) * 100))
+        }))
+        .sort((a, b) => b.playtime - a.playtime)
+        .slice(0, 5); // Top 5 géneros
+
+      res.json({ success: true, data: topGenres });
+    } catch (error) {
+      console.error("Error analizando géneros:", error);
       res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
   });

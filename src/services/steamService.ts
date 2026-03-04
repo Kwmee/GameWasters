@@ -180,6 +180,54 @@ export class SteamService {
 
     return results;
   }
+  /**
+   * Obtiene los detalles de un juego, incluyendo géneros, desde la API de la tienda de Steam
+   */
+  public async getAppDetails(appIds: number[]): Promise<Record<number, any>> {
+    if (appIds.length === 0) return {};
+
+    const results: Record<number, any> = {};
+
+    if (this.apiKey === 'mock_steam_key') {
+      appIds.forEach(id => {
+        results[id] = { genres: [{ description: 'Action' }, { description: 'RPG' }] };
+      });
+      return results;
+    }
+
+    // Procesamos en lotes para no saturar la API
+    await Promise.all(appIds.map(async (appId) => {
+      const cacheKey = `appdetails_${appId}`;
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL * 24) { // Cacheamos los detalles por más tiempo (24h)
+        results[appId] = cached.data;
+        return;
+      }
+
+      try {
+        // Hacemos un pequeño retraso aleatorio para evitar rate limits
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500));
+        
+        const response = await fetch(`${this.storeUrl}/appdetails?appids=${appId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data[appId]?.success && data[appId].data) {
+          results[appId] = data[appId].data;
+          cache.set(cacheKey, { data: data[appId].data, timestamp: Date.now() });
+        } else {
+          results[appId] = null;
+          cache.set(cacheKey, { data: null, timestamp: Date.now() });
+        }
+      } catch (error) {
+        console.error(`[SteamService] Error obteniendo detalles para ${appId}:`, error);
+        results[appId] = null;
+      }
+    }));
+
+    return results;
+  }
 }
 
 export const steamService = new SteamService();

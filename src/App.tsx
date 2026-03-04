@@ -4,7 +4,10 @@
  */
 
 import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
+import StatsPage from './components/StatsPage';
+import Header from './components/Header';
 import { useStore } from './store/useStore';
 
 export default function App() {
@@ -29,7 +32,7 @@ export default function App() {
       }
       
       if (event.data?.type === 'STEAM_AUTH_SUCCESS' && event.data?.steamId) {
-        login(event.data.steamId, event.data.steamName, event.data.steamAvatar);
+        login(event.data.steamId, event.data.steamName, event.data.steamAvatar, event.data.token);
       }
     };
     
@@ -37,5 +40,15 @@ export default function App() {
     return () => window.removeEventListener('message', handleMessage);
   }, [login]);
 
-  return <LandingPage />;
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-[#1b2838] text-[#c7d5e0] font-sans">
+        <Header />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/stats" element={<StatsPage />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
+  );
 }
