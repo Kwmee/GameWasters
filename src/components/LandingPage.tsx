@@ -1,20 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import SteamLoginButton from './SteamLoginButton';
-import { useStore } from '../store/useStore';
-import { Gamepad2, TrendingDown, Sparkles, Clock } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import SteamLoginButton from "./SteamLoginButton";
+import { useStore } from "../store/useStore";
+import { Gamepad2, TrendingDown, Sparkles, Clock } from "lucide-react";
 
 export default function LandingPage() {
   const { isAuthenticated, hashedSteamId, deals, setDeals } = useStore();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/deals')
-      .then(res => res.json())
-      .then(data => {
+    setError(null);
+
+    fetch("/api/deals")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load deals");
+        }
+        return res.json();
+      })
+      .then((data) => {
         if (data.success) {
           setDeals(data.data);
+        } else {
+          setError("No se pudieron cargar las ofertas. Inténtalo de nuevo más tarde.");
         }
+      })
+      .catch(() => {
+        setError("No se pudieron cargar las ofertas. Inténtalo de nuevo más tarde.");
       })
       .finally(() => setLoading(false));
   }, [setDeals]);
@@ -90,6 +103,12 @@ export default function LandingPage() {
             </h2>
             {isAuthenticated && <span className="text-sm text-[#66c0f4] bg-[#2a475e] px-3 py-1 rounded-full animate-pulse">Sincronizando biblioteca...</span>}
           </div>
+
+          {error && (
+            <p className="mb-6 text-sm text-red-400">
+              {error}
+            </p>
+          )}
           
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { config } from '../config';
-import crypto from 'crypto';
+import { z } from "zod";
+import { config } from "../config";
+import crypto from "crypto";
 
 // Esquema de validación estricta (equivalente a Pydantic)
 export const OwnedGameSchema = z.object({
@@ -33,11 +33,20 @@ export type SteamPriceOverview = z.infer<typeof SteamPriceOverviewSchema>;
 const cache = new Map<string, { data: OwnedGame[]; timestamp: number }>();
 const priceCache = new Map<number, { data: SteamPriceOverview | null; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hora
+const MAX_CACHE_ENTRIES = 500;
+
+function enforceCacheLimit<K, V>(map: Map<K, V>) {
+  if (map.size <= MAX_CACHE_ENTRIES) return;
+  const firstKey = map.keys().next().value as K | undefined;
+  if (firstKey !== undefined) {
+    map.delete(firstKey);
+  }
+}
 
 export class SteamService {
   private apiKey: string;
-  private baseUrl = 'http://api.steampowered.com';
-  private storeUrl = 'https://store.steampowered.com/api';
+  private baseUrl = "http://api.steampowered.com";
+  private storeUrl = "https://store.steampowered.com/api";
 
   constructor() {
     this.apiKey = config.STEAM_API_KEY;
@@ -47,7 +56,7 @@ export class SteamService {
    * Pseudonimización del SteamID real para proteger la privacidad del usuario
    */
   public hashSteamId(realSteamId: string): string {
-    return crypto.createHash('sha256').update(realSteamId).digest('hex').substring(0, 16);
+    return crypto.createHash("sha256").update(realSteamId).digest("hex").substring(0, 16);
   }
 
   /**
@@ -64,13 +73,14 @@ export class SteamService {
 
     try {
       // Si estamos usando la key de prueba, devolvemos datos mockeados
-      if (this.apiKey === 'mock_steam_key') {
+      if (this.apiKey === "mock_steam_key") {
         const mockGames: OwnedGame[] = [
-          { appid: 1091500, name: "Cyberpunk 2077", playtime_forever: 3600 },
-          { appid: 367520, name: "Hollow Knight", playtime_forever: 1200 },
-          { appid: 1245620, name: "Elden Ring", playtime_forever: 5000 }
+          { appid: 1091500, name: "Cyberpunk 2077", playtime_forever: 3600, playtime_2weeks: 0 },
+          { appid: 367520, name: "Hollow Knight", playtime_forever: 1200, playtime_2weeks: 0 },
+          { appid: 1245620, name: "Elden Ring", playtime_forever: 5000, playtime_2weeks: 0 }
         ];
         cache.set(cacheKey, { data: mockGames, timestamp: Date.now() });
+        enforceCacheLimit(cache);
         return mockGames;
       }
 
@@ -80,9 +90,11 @@ export class SteamService {
       if (!response.ok) {
         // Manejo básico de Rate Limiting (HTTP 429)
         if (response.status === 429) {
-          console.error("[SteamService] Rate limit excedido (100,000 llamadas/día).");
+          console.error("[SteamService] Rate limit excedido al obtener juegos (HTTP 429).");
+        } else {
+          console.error(`[SteamService] Error en Steam API (obtener juegos): HTTP ${response.status} - ${response.statusText}`);
         }
-        throw new Error(`Error en Steam API: ${response.statusText}`);
+        throw new Error("Error en Steam API al obtener juegos del usuario");
       }
 
       const rawData = await response.json();
@@ -92,6 +104,7 @@ export class SteamService {
       const games = validatedData.response.games || [];
       
       cache.set(cacheKey, { data: games, timestamp: Date.now() });
+      enforceCacheLimit(cache);
       return games;
       
     } catch (error) {
@@ -108,9 +121,9 @@ export class SteamService {
 
     const results: Record<number, SteamPriceOverview | null> = {};
 
-    if (this.apiKey === 'mock_steam_key') {
+    if (this.apiKey === "mock_steam_key") {
       appIds.forEach(id => {
-        results[id] = { currency: 'USD', initial: 3999, final: 1999, discount_percent: 50 };
+        results[id] = { currency: "USD", initial: 3999, final: 1999, discount_percent: 50 };
       });
       return results;
     }
@@ -126,7 +139,14 @@ export class SteamService {
 
       try {
         const response = await fetch(`${this.storeUrl}/appdetails?appids=${appId}&filters=price_overview`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.error(`[SteamService] Rate limit excedido al obtener precio para ${appId} (HTTP 429).`);
+          } else {
+            console.error(`[SteamService] Error HTTP al obtener precio para ${appId}: ${response.status} - ${response.statusText}`);
+          }
+          throw new Error("Error en Steam Store API al obtener precios");
+        }
         
         const data = await response.json();
         
@@ -134,9 +154,11 @@ export class SteamService {
           const parsed = SteamPriceOverviewSchema.parse(data[appId].data.price_overview);
           results[appId] = parsed;
           priceCache.set(appId, { data: parsed, timestamp: Date.now() });
+          enforceCacheLimit(priceCache);
         } else {
           results[appId] = null; // Juego gratuito o sin precio disponible
           priceCache.set(appId, { data: null, timestamp: Date.now() });
+          enforceCacheLimit(priceCache);
         }
       } catch (error) {
         console.error(`[SteamService] Error obteniendo precio para ${appId}:`, error);

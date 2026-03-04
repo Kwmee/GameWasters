@@ -1,23 +1,20 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import session from "express-session";
-import { config } from "./src/config";
+import passport from "passport";
+import { config, PORT } from "./src/config";
 import { steamService } from "./src/services/steamService";
+import { configureSteamAuth } from "./src/auth/steamStrategy";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+
+  const appUrl = config.APP_URL || `http://localhost:${PORT}`;
+  const steamCallbackPath = "/api/auth/steam/return";
 
   app.use(express.json());
-  app.use(session({
-    secret: config.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: config.NODE_ENV === 'production',
-      sameSite: 'lax',
-    }
-  }));
+
+  // Configurar autenticación de Steam con Passport (sin sesiones de servidor)
+  configureSteamAuth(app, appUrl, steamCallbackPath);
 
   // Simulación de BackgroundTask de FastAPI en Node.js
   const syncUserLibrary = async (hashedSteamId: string, realSteamId: string) => {
@@ -51,37 +48,27 @@ async function startServer() {
     }
   };
 
-  // Endpoint para obtener la URL de autenticación de Steam OpenID
-  app.get("/api/auth/steam/url", (req, res) => {
-    const appUrl = config.APP_URL || `http://localhost:${PORT}`;
-    const returnUrl = `${appUrl}/api/auth/steam/return`;
-    const realm = appUrl;
+  // Endpoint de inicio de autenticación con Steam (redirige a Steam)
+  app.get("/api/auth/steam/login", passport.authenticate("steam", { session: false }));
 
-    const params = new URLSearchParams({
-      'openid.ns': 'http://specs.openid.net/auth/2.0',
-      'openid.mode': 'checkid_setup',
-      'openid.return_to': returnUrl,
-      'openid.realm': realm,
-      'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
-      'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
-    });
+  // Endpoint de autenticación (callback) para Steam OpenID
+  app.get(
+    steamCallbackPath,
+    passport.authenticate("steam", { session: false, failureRedirect: "/" }),
+    async (req, res) => {
+      const user = (req as any).user as { id?: string } | undefined;
+      const realSteamId = user?.id || "76561197960435530"; // ID de prueba en entornos de desarrollo si algo falla
 
-    res.json({ url: `https://steamcommunity.com/openid/login?${params.toString()}` });
-  });
+      // Pseudonimización del SteamID por privacidad
+      const hashedSteamId = steamService.hashSteamId(realSteamId);
 
-  // Endpoint de autenticación mediante el flujo ValidateResults para Steam OpenID
-  app.get("/api/auth/steam/return", async (req, res) => {
-    const claimedId = req.query['openid.claimed_id'] as string;
-    const realSteamId = claimedId ? claimedId.split('/').pop() : '76561197960435530'; // ID de prueba si falla
+      // Ejecutar tarea en segundo plano sin bloquear la respuesta (equivalente a BackgroundTasks)
+      syncUserLibrary(hashedSteamId, realSteamId).catch(console.error);
 
-    // Pseudonimización del SteamID por privacidad
-    const hashedSteamId = steamService.hashSteamId(realSteamId || '');
+      const targetOrigin = config.APP_URL || appUrl;
 
-    // Ejecutar tarea en segundo plano sin bloquear la respuesta (equivalente a BackgroundTasks)
-    syncUserLibrary(hashedSteamId, realSteamId || '').catch(console.error);
-
-    // Enviar mensaje de éxito a la ventana padre (iframe) y cerrar el popup
-    res.send(`
+      // Enviar mensaje de éxito a la ventana padre (iframe) y cerrar el popup
+      res.send(`
       <html>
         <head>
           <title>Autenticación Exitosa</title>
@@ -97,7 +84,7 @@ async function startServer() {
           </div>
           <script>
             if (window.opener) {
-              window.opener.postMessage({ type: 'STEAM_AUTH_SUCCESS', steamId: '${hashedSteamId}' }, '*');
+              window.opener.postMessage({ type: 'STEAM_AUTH_SUCCESS', steamId: '${hashedSteamId}' }, '${targetOrigin}');
               setTimeout(() => window.close(), 1500);
             } else {
               window.location.href = '/?steamId=${hashedSteamId}';
@@ -106,7 +93,8 @@ async function startServer() {
         </body>
       </html>
     `);
-  });
+    },
+  );
 
   // Endpoint de Ofertas
   app.get("/api/deals", (req, res) => {
