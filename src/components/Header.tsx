@@ -12,7 +12,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Gamepad2 className="w-8 h-8 text-[#66c0f4]" />
-          <h1 className="text-2xl font-bold text-white tracking-wider">SteamDeals<span className="text-[#66c0f4]">AI</span></h1>
+          <h1 className="text-2xl font-bold text-white tracking-wider">Game<span className="text-[#66c0f4]">Wasters</span></h1>
         </Link>
         {isAuthenticated ? (
           <div className="flex items-center gap-6">

@@ -12,6 +12,7 @@ export interface Deal {
 export interface TopGenre {
   name: string;
   playtime: number;
+  gamesCount: number;
   percentage: number;
 }
 

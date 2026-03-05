@@ -30,7 +30,8 @@ export const SteamPriceOverviewSchema = z.object({
 export type SteamPriceOverview = z.infer<typeof SteamPriceOverviewSchema>;
 
 // Sistema de caché simple en memoria
-const cache = new Map<string, { data: OwnedGame[]; timestamp: number }>();
+const ownedGamesCache = new Map<string, { data: OwnedGame[]; timestamp: number }>();
+const appDetailsCache = new Map<string, { data: any; timestamp: number }>();
 const priceCache = new Map<number, { data: SteamPriceOverview | null; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hora
 
@@ -55,8 +56,8 @@ export class SteamService {
    */
   public async getOwnedGames(steamId: string): Promise<OwnedGame[]> {
     const cacheKey = `owned_games_${steamId}`;
-    const cached = cache.get(cacheKey);
-    
+    const cached = ownedGamesCache.get(cacheKey);
+
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log(`[SteamService] Retornando juegos desde caché para ${steamId}`);
       return cached.data;
@@ -70,7 +71,7 @@ export class SteamService {
           { appid: 367520, name: "Hollow Knight", playtime_forever: 1200, playtime_2weeks: 0 },
           { appid: 1245620, name: "Elden Ring", playtime_forever: 5000, playtime_2weeks: 0 }
         ];
-        cache.set(cacheKey, { data: mockGames, timestamp: Date.now() });
+        ownedGamesCache.set(cacheKey, { data: mockGames, timestamp: Date.now() });
         return mockGames;
       }
 
@@ -91,7 +92,7 @@ export class SteamService {
       const validatedData = SteamResponseSchema.parse(rawData);
       const games = validatedData.response.games || [];
       
-      cache.set(cacheKey, { data: games, timestamp: Date.now() });
+      ownedGamesCache.set(cacheKey, { data: games, timestamp: Date.now() });
       return games;
       
     } catch (error) {
@@ -215,7 +216,7 @@ export class SteamService {
     // Procesamos en lotes para no saturar la API
     await Promise.all(appIds.map(async (appId) => {
       const cacheKey = `appdetails_${appId}`;
-      const cached = cache.get(cacheKey);
+      const cached = appDetailsCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL * 24) { // Cacheamos los detalles por más tiempo (24h)
         results[appId] = cached.data;
         return;
@@ -232,10 +233,10 @@ export class SteamService {
         
         if (data[appId]?.success && data[appId].data) {
           results[appId] = data[appId].data;
-          cache.set(cacheKey, { data: data[appId].data, timestamp: Date.now() });
+          appDetailsCache.set(cacheKey, { data: data[appId].data, timestamp: Date.now() });
         } else {
           results[appId] = null;
-          cache.set(cacheKey, { data: null, timestamp: Date.now() });
+          appDetailsCache.set(cacheKey, { data: null, timestamp: Date.now() });
         }
       } catch (error) {
         console.error(`[SteamService] Error obteniendo detalles para ${appId}:`, error);

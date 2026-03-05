@@ -1,7 +1,6 @@
 import express from "express";
 import session from "express-session";
 import jwt from "jsonwebtoken";
-import { createServer as createViteServer } from "vite";
 import { config } from "./src/config";
 import { initializeDatabase } from "./src/db/sqlite";
 import {
@@ -17,6 +16,18 @@ import { steamService } from "./src/services/steamService";
 
 const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
 const MAX_STORED_GENRES = 15;
+
+/** Escapa caracteres peligrosos para interpolación segura dentro de strings JS en HTML */
+function escapeForJs(str: string): string {
+  return str
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/</g, "\\x3c")
+    .replace(/>/g, "\\x3e")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
+}
 
 async function startServer() {
   initializeDatabase();
@@ -242,14 +253,14 @@ async function startServer() {
               if (window.opener) {
                 window.opener.postMessage({
                   type: 'STEAM_AUTH_SUCCESS',
-                  steamId: '${hashedSteamId}',
-                  steamName: '${steamName.replace(/'/g, "\\'")}',
-                  steamAvatar: '${steamAvatar}',
-                  token: '${token}'
-                }, '*');
+                  steamId: '${escapeForJs(hashedSteamId)}',
+                  steamName: '${escapeForJs(steamName)}',
+                  steamAvatar: '${escapeForJs(steamAvatar)}',
+                  token: '${escapeForJs(token)}'
+                }, window.location.origin);
                 setTimeout(() => window.close(), 1500);
               } else {
-                window.location.href = '/?steamId=${hashedSteamId}';
+                window.location.href = '/?steamId=${escapeForJs(hashedSteamId)}';
               }
             </script>
           </body>
@@ -380,8 +391,17 @@ async function startServer() {
   });
 
   if (config.NODE_ENV !== "production") {
+    const [
+      { createServer: createViteServer },
+      { default: reactPlugin },
+    ] = await Promise.all([
+      import("vite"),
+      import("@vitejs/plugin-react"),
+    ]);
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      configFile: false,
+      plugins: [reactPlugin()],
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);
