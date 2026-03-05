@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "http";
-import { createApp } from "../server.js";
+import { createApp } from "./server.js";
 
 let appPromise: ReturnType<typeof createApp> | null = null;
 
