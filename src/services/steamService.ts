@@ -29,8 +29,21 @@ export const SteamPriceOverviewSchema = z.object({
 
 export type SteamPriceOverview = z.infer<typeof SteamPriceOverviewSchema>;
 
+export type MostPlayedSteamGame = {
+  appid: number;
+  rank: number;
+  concurrent_in_game?: number;
+};
+
+export type SteamTopGameWithGenres = {
+  appId: number;
+  title: string;
+  gameGenres: string[];
+  concurrentPlayers?: number;
+};
+
 // Sistema de caché simple en memoria
-const cache = new Map<string, { data: OwnedGame[]; timestamp: number }>();
+const cache = new Map<string, { data: unknown; timestamp: number }>();
 const priceCache = new Map<number, { data: SteamPriceOverview | null; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hora
 
@@ -59,7 +72,7 @@ export class SteamService {
     
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log(`[SteamService] Retornando juegos desde caché para ${steamId}`);
-      return cached.data;
+      return cached.data as OwnedGame[];
     }
 
     try {
@@ -244,6 +257,89 @@ export class SteamService {
     }));
 
     return results;
+  }
+
+  /**
+   * Obtiene el top global de juegos mas jugados de Steam.
+   */
+  public async getMostPlayedGames(limit: number = 100): Promise<MostPlayedSteamGame[]> {
+    try {
+      if (this.apiKey === 'mock_steam_key') {
+        return [
+          { appid: 730, rank: 1, concurrent_in_game: 950000 },
+          { appid: 570, rank: 2, concurrent_in_game: 680000 },
+          { appid: 440, rank: 3, concurrent_in_game: 120000 },
+          { appid: 271590, rank: 4, concurrent_in_game: 115000 },
+          { appid: 1091500, rank: 5, concurrent_in_game: 87000 },
+        ].slice(0, limit);
+      }
+
+      const cacheKey = `most_played_${limit}`;
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < 1000 * 60 * 20) {
+        return cached.data as MostPlayedSteamGame[];
+      }
+
+      const response = await fetch(
+        `${this.baseUrl}/ISteamChartsService/GetMostPlayedGames/v1/?key=${this.apiKey}`,
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      const ranks = Array.isArray(data?.response?.ranks) ? data.response.ranks : [];
+      const normalized = ranks
+        .map((item: any): MostPlayedSteamGame | null => {
+          if (typeof item?.appid !== 'number' || typeof item?.rank !== 'number') {
+            return null;
+          }
+          return {
+            appid: item.appid,
+            rank: item.rank,
+            concurrent_in_game:
+              typeof item.concurrent_in_game === 'number'
+                ? item.concurrent_in_game
+                : undefined,
+          };
+        })
+        .filter((item: MostPlayedSteamGame | null): item is MostPlayedSteamGame => item !== null)
+        .slice(0, limit);
+
+      cache.set(cacheKey, { data: normalized, timestamp: Date.now() });
+      return normalized;
+    } catch (error) {
+      console.error(`[SteamService] Error obteniendo top de juegos mas jugados:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Devuelve el top de Steam con titulo y generos normalizados para ranking.
+   */
+  public async getTopSteamGamesWithGenres(limit: number = 100): Promise<SteamTopGameWithGenres[]> {
+    const topGames = await this.getMostPlayedGames(limit);
+    if (topGames.length === 0) {
+      return [];
+    }
+
+    const appIds = topGames.map((game) => game.appid);
+    const detailsByAppId = await this.getAppDetails(appIds);
+
+    return topGames.map((game) => {
+      const details = detailsByAppId[game.appid];
+      const title = details?.name || `App ${game.appid}`;
+      const gameGenres = Array.isArray(details?.genres)
+        ? details.genres
+            .map((genre: any) => genre?.description)
+            .filter((genre: unknown): genre is string => typeof genre === 'string')
+        : [];
+
+      return {
+        appId: game.appid,
+        title,
+        gameGenres,
+        concurrentPlayers: game.concurrent_in_game,
+      };
+    });
   }
 }
 

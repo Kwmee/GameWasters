@@ -9,6 +9,14 @@ export interface Deal {
   image: string;
 }
 
+export interface TopSteamRecommendation {
+  appId: number;
+  title: string;
+  score: number;
+  gameGenres: string[];
+  concurrentPlayers: number | null;
+}
+
 export interface TopGenre {
   name: string;
   playtime: number;
@@ -22,10 +30,12 @@ interface AppState {
   steamAvatar: string | null;
   token: string | null;
   deals: Deal[];
+  topSteamRecommendations: TopSteamRecommendation[];
   topGenres: TopGenre[];
   login: (hashedSteamId: string, steamName?: string, steamAvatar?: string, token?: string) => void;
   logout: () => void;
   setDeals: (deals: Deal[]) => void;
+  setTopSteamRecommendations: (items: TopSteamRecommendation[]) => void;
   setTopGenres: (genres: TopGenre[]) => void;
 }
 
@@ -38,12 +48,23 @@ export const useStore = create<AppState>()(
       steamAvatar: null,
       token: null,
       deals: [],
+      topSteamRecommendations: [],
       topGenres: [],
       login: (hashedSteamId, steamName, steamAvatar, token) => 
         set({ isAuthenticated: true, hashedSteamId, steamName, steamAvatar, token }),
       logout: () => 
-        set({ isAuthenticated: false, hashedSteamId: null, steamName: null, steamAvatar: null, token: null, deals: [], topGenres: [] }),
+        set({
+          isAuthenticated: false,
+          hashedSteamId: null,
+          steamName: null,
+          steamAvatar: null,
+          token: null,
+          deals: [],
+          topSteamRecommendations: [],
+          topGenres: [],
+        }),
       setDeals: (deals) => set({ deals }),
+      setTopSteamRecommendations: (topSteamRecommendations) => set({ topSteamRecommendations }),
       setTopGenres: (topGenres) => set({ topGenres }),
     }),
     {

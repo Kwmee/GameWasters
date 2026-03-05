@@ -10,13 +10,23 @@ import {
 } from "./src/repositories/userRepository";
 import {
   type UserGenreStatInput,
+  getUserGenreStats,
   upsertUserGenreStats,
 } from "./src/repositories/userGenreStatsRepository";
 import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher";
+import {
+  computeGenreWeights,
+  scoreGamesByGenreWeights,
+  type GenreWeights,
+} from "./src/services/recommendationService";
 import { steamService } from "./src/services/steamService";
 
 const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
 const MAX_STORED_GENRES = 15;
+const DEALS_CANDIDATE_POOL = 60;
+const DEALS_RESPONSE_LIMIT = 12;
+const TOP_STEAM_LIMIT = 100;
+const TOP_STEAM_RESPONSE_LIMIT = 30;
 
 async function startServer() {
   initializeDatabase();
@@ -106,6 +116,45 @@ async function startServer() {
       }))
       .sort((a, b) => b.playtime - a.playtime)
       .slice(0, limit);
+  };
+
+  const getHashedSteamId = (
+    req: express.Request,
+    realSteamId: string | null,
+  ): string | null => {
+    const fromJwt = (req as any).user?.steamId as string | undefined;
+    if (fromJwt) {
+      return fromJwt;
+    }
+    if (realSteamId) {
+      return steamService.hashSteamId(realSteamId);
+    }
+    return null;
+  };
+
+  const buildOrLoadGenreWeights = async (
+    hashedSteamId: string,
+    realSteamId: string,
+  ): Promise<GenreWeights> => {
+    let statsRows = getUserGenreStats(hashedSteamId);
+
+    if (statsRows.length === 0) {
+      const computedStats = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
+      if (computedStats.length === 0) {
+        return {};
+      }
+
+      upsertUserGenreStats(hashedSteamId, computedStats);
+      statsRows = computedStats.map((stat) => ({
+        hashedSteamId,
+        genreName: stat.name,
+        playtimeHours: stat.playtime,
+        gamesCount: stat.gamesCount,
+        percentage: stat.percentage,
+      }));
+    }
+
+    return computeGenreWeights(statsRows);
   };
 
   app.use(express.json());
@@ -264,6 +313,7 @@ async function startServer() {
   app.get("/api/deals", async (req, res) => {
     const realSteamId = resolveRealSteamId(req);
     const isAuth = req.query.steamId as string;
+    const hashedSteamId = getHashedSteamId(req, realSteamId);
 
     try {
       const specials = await steamService.getSpecials();
@@ -271,60 +321,47 @@ async function startServer() {
         new Set(specials.map((item: any) => item.id).filter((id: any) => id != null)),
       ) as number[];
 
-      if (isAuth && realSteamId) {
+      if (isAuth && realSteamId && hashedSteamId) {
         const ownedGames = await steamService.getOwnedGames(realSteamId);
         const ownedAppIds = new Set(ownedGames.map((g) => g.appid));
         recommendedAppIds = recommendedAppIds.filter(
           (id: number) => !ownedAppIds.has(id),
         );
 
-        const topGames = ownedGames
-          .filter((g) => g.playtime_forever > 0)
-          .sort((a, b) => b.playtime_forever - a.playtime_forever)
-          .slice(0, 20);
-
-        const appIds = topGames.map((g) => g.appid);
-        const appDetails = await steamService.getAppDetails(appIds);
-        const genrePlaytime: Record<string, number> = {};
-
-        topGames.forEach((game) => {
-          const details = appDetails[game.appid];
-          if (details?.genres) {
-            details.genres.forEach((genre: any, index: number) => {
-              const weight = index === 0 ? 1 : 0.5;
-              genrePlaytime[genre.description] =
-                (genrePlaytime[genre.description] || 0) +
-                game.playtime_forever * weight;
-            });
-          }
-        });
-
-        const topGenres = Object.entries(genrePlaytime)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map((entry) => entry[0]);
-
-        if (topGenres.length > 0) {
+        const genreWeights = await buildOrLoadGenreWeights(hashedSteamId, realSteamId);
+        if (Object.keys(genreWeights).length > 0) {
           recommendedAppIds.sort(() => Math.random() - 0.5);
           const recommendedDetails = await steamService.getAppDetails(
-            recommendedAppIds.slice(0, 40),
+            recommendedAppIds.slice(0, DEALS_CANDIDATE_POOL),
           );
 
-          recommendedAppIds.sort((a, b) => {
-            const detailsA = recommendedDetails[a];
-            const detailsB = recommendedDetails[b];
-            const genresA = detailsA?.genres?.map((g: any) => g.description) || [];
-            const genresB = detailsB?.genres?.map((g: any) => g.description) || [];
-            const scoreA = genresA.filter((g: string) => topGenres.includes(g)).length;
-            const scoreB = genresB.filter((g: string) => topGenres.includes(g)).length;
-            return scoreB - scoreA;
-          });
+          const candidates = recommendedAppIds
+            .slice(0, DEALS_CANDIDATE_POOL)
+            .map((appId) => {
+              const details = recommendedDetails[appId];
+              const gameGenres = Array.isArray(details?.genres)
+                ? details.genres
+                    .map((genre: any) => genre?.description)
+                    .filter((genre: unknown): genre is string => typeof genre === "string")
+                : [];
+
+              return {
+                appId,
+                title: details?.name || `Juego ${appId}`,
+                gameGenres,
+              };
+            });
+
+          const rankedCandidates = scoreGamesByGenreWeights(genreWeights, candidates);
+          recommendedAppIds = rankedCandidates.map((game) => game.appId);
+        } else {
+          recommendedAppIds.sort(() => Math.random() - 0.5);
         }
       } else {
         recommendedAppIds.sort(() => Math.random() - 0.5);
       }
 
-      recommendedAppIds = recommendedAppIds.slice(0, 12);
+      recommendedAppIds = recommendedAppIds.slice(0, DEALS_RESPONSE_LIMIT);
       if (recommendedAppIds.length === 0) {
         return res.json({ success: true, data: [] });
       }
@@ -357,6 +394,55 @@ async function startServer() {
       res.json({ success: true, data: deals });
     } catch (error) {
       console.error("Error obteniendo ofertas reales:", error);
+      res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
+  });
+
+  app.get("/api/recommendations/top-steam", async (req, res) => {
+    const realSteamId = resolveRealSteamId(req);
+    if (!realSteamId) {
+      return res.status(401).json({ success: false, error: "No autorizado" });
+    }
+
+    const hashedSteamId = getHashedSteamId(req, realSteamId);
+    if (!hashedSteamId) {
+      return res.status(401).json({ success: false, error: "No autorizado" });
+    }
+
+    try {
+      const [ownedGames, topSteamGames] = await Promise.all([
+        steamService.getOwnedGames(realSteamId),
+        steamService.getTopSteamGamesWithGenres(TOP_STEAM_LIMIT),
+      ]);
+
+      const ownedAppIds = new Set(ownedGames.map((game) => game.appid));
+      const candidates = topSteamGames.filter((game) => !ownedAppIds.has(game.appId));
+      const genreWeights = await buildOrLoadGenreWeights(hashedSteamId, realSteamId);
+
+      const rankedGames = scoreGamesByGenreWeights(genreWeights, candidates);
+      const byId = new Map(candidates.map((game) => [game.appId, game]));
+
+      const data = rankedGames.slice(0, TOP_STEAM_RESPONSE_LIMIT).map((game) => {
+        const source = byId.get(game.appId);
+        return {
+          appId: game.appId,
+          title: game.title,
+          score: Number(game.score.toFixed(6)),
+          gameGenres: source?.gameGenres ?? [],
+          concurrentPlayers: source?.concurrentPlayers ?? null,
+        };
+      });
+
+      res.json({
+        success: true,
+        data,
+        meta: {
+          source: "steam_top_most_played",
+          candidateCount: candidates.length,
+        },
+      });
+    } catch (error) {
+      console.error("Error generando recomendaciones top Steam:", error);
       res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
   });

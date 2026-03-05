@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import SteamLoginButton from './SteamLoginButton';
 import { useStore } from '../store/useStore';
-import { Gamepad2, TrendingDown, Sparkles, Clock } from 'lucide-react';
+import { TrendingDown, Sparkles, Clock, Flame } from 'lucide-react';
 
 export default function LandingPage() {
-  const { isAuthenticated, hashedSteamId, deals, setDeals } = useStore();
+  const {
+    isAuthenticated,
+    hashedSteamId,
+    deals,
+    setDeals,
+    topSteamRecommendations,
+    setTopSteamRecommendations,
+    token,
+  } = useStore();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'deals' | 'topSteam'>('deals');
 
   useEffect(() => {
     setLoading(true);
@@ -14,7 +23,6 @@ export default function LandingPage() {
       : '/api/deals';
       
     const headers: HeadersInit = {};
-    const token = useStore.getState().token;
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -27,7 +35,27 @@ export default function LandingPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [setDeals, isAuthenticated, hashedSteamId]);
+  }, [setDeals, isAuthenticated, hashedSteamId, token]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    if (activeTab !== 'topSteam') return;
+    if (topSteamRecommendations.length > 0) return;
+
+    setLoading(true);
+    fetch('/api/recommendations/top-steam', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTopSteamRecommendations(data.data);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [activeTab, isAuthenticated, token, topSteamRecommendations.length, setTopSteamRecommendations]);
 
   return (
     <main>
@@ -75,12 +103,44 @@ export default function LandingPage() {
 
       {/* Main Content Area */}
       <section className="py-12 max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <h2 className="text-3xl font-bold text-white">
-            {isAuthenticated ? "Recomendaciones para ti" : "Ofertas del Momento"}
+            {isAuthenticated
+              ? activeTab === 'deals'
+                ? 'Recomendaciones para ti'
+                : 'Recomendados Top Steam'
+              : 'Ofertas del Momento'}
           </h2>
           {isAuthenticated && loading && <span className="text-sm text-[#66c0f4] bg-[#2a475e] px-3 py-1 rounded-full animate-pulse">Sincronizando biblioteca...</span>}
         </div>
+
+        {isAuthenticated && (
+          <div className="mb-6 inline-flex bg-[#171a21] border border-[#2a475e] rounded-lg p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('deals')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                activeTab === 'deals'
+                  ? 'bg-[#66c0f4] text-[#0f1215] font-semibold'
+                  : 'text-gray-300 hover:text-white hover:bg-[#2a475e]'
+              }`}
+            >
+              Ofertas personalizadas
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('topSteam')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-2 ${
+                activeTab === 'topSteam'
+                  ? 'bg-[#66c0f4] text-[#0f1215] font-semibold'
+                  : 'text-gray-300 hover:text-white hover:bg-[#2a475e]'
+              }`}
+            >
+              <Flame className="w-4 h-4" />
+              Top Steam por afinidad
+            </button>
+          </div>
+        )}
         
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -92,7 +152,7 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : activeTab === 'deals' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {deals.map((deal) => (
               <div key={deal.steamId} className="bg-[#171a21] rounded-xl overflow-hidden border border-[#2a475e] hover:border-[#66c0f4] hover:shadow-[0_0_15px_rgba(102,192,244,0.2)] transition-all group cursor-pointer flex flex-col">
@@ -122,6 +182,50 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : topSteamRecommendations.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {topSteamRecommendations.map((game) => (
+              <div key={game.appId} className="bg-[#171a21] rounded-xl overflow-hidden border border-[#2a475e] hover:border-[#66c0f4] hover:shadow-[0_0_15px_rgba(102,192,244,0.2)] transition-all group flex flex-col">
+                <div className="relative overflow-hidden">
+                  <img
+                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg`}
+                    alt={game.title}
+                    className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-3 right-3 bg-[#2a475e] text-[#66c0f4] px-3 py-1 text-xs font-bold rounded shadow-lg">
+                    Score {game.score.toFixed(3)}
+                  </div>
+                </div>
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#66c0f4] transition-colors">{game.title}</h3>
+                  <p className="text-xs text-gray-500 mb-2">App ID: {game.appId}</p>
+                  <p className="text-xs text-gray-400 mb-3">
+                    {game.gameGenres.length > 0 ? game.gameGenres.join(' · ') : 'Géneros no disponibles'}
+                  </p>
+                  <div className="mt-auto flex justify-between items-center">
+                    <span className="text-xs text-gray-400">
+                      {typeof game.concurrentPlayers === 'number'
+                        ? `${game.concurrentPlayers.toLocaleString()} jugando ahora`
+                        : 'Popularidad no disponible'}
+                    </span>
+                    <a
+                      href={`https://store.steampowered.com/app/${game.appId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-[#2a475e] hover:bg-[#66c0f4] hover:text-white text-[#66c0f4] px-4 py-2 rounded text-sm font-medium transition-colors"
+                    >
+                      Ver Juego
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-[#171a21] rounded-xl p-6 border border-[#2a475e] text-gray-300">
+            No hay recomendaciones Top Steam disponibles todavía para tu perfil.
           </div>
         )}
       </section>
