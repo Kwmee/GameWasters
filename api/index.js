@@ -1,14 +1,13 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { createApp } from "./server.js";
 
-let appPromise: ReturnType<typeof createApp> | null = null;
+let appPromise = null;
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req, res) {
   if (!appPromise) {
     appPromise = createApp();
   }
 
-  // Mantiene las rutas `/api/*` originales cuando Vercel reescribe hacia `/api/index`.
+  // Keep original `/api/*` paths when Vercel rewrites to `/api/index`.
   if (typeof req.url === "string") {
     const parsed = new URL(req.url, "http://localhost");
     const rewrittenPath = parsed.searchParams.get("__path");
@@ -20,5 +19,5 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   const app = await appPromise;
-  return app(req as any, res as any);
+  return app(req, res);
 }
