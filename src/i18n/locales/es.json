@@ -1,0 +1,120 @@
+{
+  "header": {
+    "stats": "Estadisticas",
+    "logout": "Cerrar sesion"
+  },
+  "hero": {
+    "title1": "Descubre tu proximo juego favorito.",
+    "title2": "Al mejor precio.",
+    "subtitle": "Utilizamos Inteligencia Artificial y Filtrado Colaborativo basado en tu",
+    "subtitleBold": "tiempo de juego",
+    "subtitle2": "para recomendarte ofertas personalizadas y rastrear minimos historicos."
+  },
+  "features": {
+    "svdTitle": "Recomendaciones SVD",
+    "svdDesc": "Algoritmo de 7 factores latentes optimizado para Steam. No te recomendamos lo popular, te recomendamos lo que te gustara.",
+    "playtimeTitle": "Basado en Playtime",
+    "playtimeDesc": "Analizamos tus horas de juego reales, la metrica mas honesta para entender tus verdaderos gustos como jugador.",
+    "dealsTitle": "Minimos Historicos",
+    "dealsDesc": "Integracion con IsThereAnyDeal para asegurar que compras en el momento exacto en que el precio toca fondo."
+  },
+  "deals": {
+    "recommendationsTitle": "Recomendaciones para ti",
+    "dealsTitle": "Ofertas del Momento",
+    "syncing": "Sincronizando biblioteca...",
+    "viewDeal": "Ver Oferta",
+    "appId": "App ID",
+    "prev": "Anterior",
+    "next": "Siguiente"
+  },
+  "stats": {
+    "title": "Tus Estadisticas",
+    "subtitle": "Analisis basado en tu tiempo de juego real en Steam.",
+    "topGenresTitle": "Tus Generos Favoritos",
+    "noGenreData": "No hay suficientes datos de juego para analizar tus generos.",
+    "totalPlaytimeTitle": "Tiempo Total de Juego",
+    "hours": "horas",
+    "games": "juegos",
+    "avgPerGame": "Promedio por juego",
+    "mostPlayedGenre": "Genero mas jugado",
+    "libraryValueTitle": "Valor de Biblioteca",
+    "estimatedValue": "Valor estimado",
+    "potentialSavings": "Ahorro potencial",
+    "gamesOnSale": "Juegos en oferta",
+    "activityTitle": "Actividad Reciente",
+    "last2Weeks": "Ultimas 2 semanas",
+    "activeGames": "Juegos activos",
+    "avgSession": "Sesion promedio",
+    "comingSoon": "Mas estadisticas proximamente",
+    "comingSoonDesc": "Estamos trabajando en integrar mas datos sobre tus habitos de juego, como juegos nunca jugados, logros completados y mas."
+  },
+  "footer": {
+    "description": "Recomendaciones de juegos inteligentes basadas en tu tiempo de juego real.",
+    "legal": "Legal",
+    "privacy": "Politica de Privacidad",
+    "terms": "Terminos de Servicio",
+    "resources": "Recursos",
+    "steamStore": "Tienda de Steam",
+    "about": "Acerca de",
+    "rights": "Todos los derechos reservados.",
+    "disclaimer": "No afiliado con Valve Corporation. Steam y el logo de Steam son marcas registradas de Valve Corporation."
+  },
+  "privacy": {
+    "title": "Politica de Privacidad",
+    "lastUpdated": "Ultima actualizacion",
+    "intro": "En GameWasters, respetamos tu privacidad. Esta politica explica como recopilamos, usamos y protegemos tu informacion.",
+    "collectTitle": "Informacion que Recopilamos",
+    "collectItems": [
+      "Tu Steam ID publico (cifrado y hasheado en nuestros servidores)",
+      "Lista de juegos en tu biblioteca de Steam (informacion publica)",
+      "Tiempo de juego por titulo (informacion publica)",
+      "Preferencias de genero derivadas de tu actividad"
+    ],
+    "useTitle": "Como Usamos tu Informacion",
+    "useItems": [
+      "Generar recomendaciones de juegos personalizadas",
+      "Mostrarte ofertas relevantes basadas en tus gustos",
+      "Calcular estadisticas de tu biblioteca",
+      "Mejorar nuestros algoritmos de recomendacion"
+    ],
+    "noSellTitle": "Lo que NO Hacemos",
+    "noSellItems": [
+      "No vendemos tu informacion a terceros",
+      "No almacenamos tu contrasena de Steam",
+      "No accedemos a informacion privada de tu cuenta",
+      "No enviamos correos no solicitados"
+    ],
+    "securityTitle": "Seguridad",
+    "securityDesc": "Tu Steam ID se cifra con AES-256-GCM antes de almacenarse. Solo conservamos un hash irreversible como identificador.",
+    "deleteTitle": "Eliminacion de Datos",
+    "deleteDesc": "Puedes solicitar la eliminacion de tus datos contactandonos. Eliminaremos toda tu informacion en un plazo de 30 dias.",
+    "back": "Volver al inicio"
+  },
+  "terms": {
+    "title": "Terminos de Servicio",
+    "lastUpdated": "Ultima actualizacion",
+    "intro": "Al usar GameWasters, aceptas estos terminos de servicio.",
+    "serviceTitle": "El Servicio",
+    "serviceDesc": "GameWasters es una herramienta gratuita que analiza tu biblioteca de Steam para ofrecerte recomendaciones de juegos y alertas de ofertas.",
+    "accountTitle": "Tu Cuenta",
+    "accountItems": [
+      "Debes tener una cuenta de Steam valida para usar el servicio",
+      "Tu perfil de Steam debe ser publico para que podamos acceder a tu biblioteca",
+      "Eres responsable de mantener seguro tu token de sesion"
+    ],
+    "limitationsTitle": "Limitaciones",
+    "limitationsItems": [
+      "Las recomendaciones se generan automaticamente y pueden no ser perfectas",
+      "Los precios mostrados pueden no estar actualizados en tiempo real",
+      "No garantizamos la disponibilidad continua del servicio"
+    ],
+    "ipTitle": "Propiedad Intelectual",
+    "ipDesc": "Steam, los logos de Steam y los datos de juegos son propiedad de Valve Corporation. GameWasters no esta afiliado con Valve.",
+    "changesTitle": "Cambios en los Terminos",
+    "changesDesc": "Nos reservamos el derecho de modificar estos terminos. Los cambios se publicaran en esta pagina.",
+    "back": "Volver al inicio"
+  },
+  "lang": {
+    "switch": "English"
+  }
+}

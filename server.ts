@@ -398,9 +398,11 @@ async function startServer() {
       import("vite"),
       import("@vitejs/plugin-react"),
     ]);
+    const { default: tailwindPlugin } = await import("@tailwindcss/postcss");
     const vite = await createViteServer({
       configFile: false,
       plugins: [reactPlugin()],
+      css: { postcss: { plugins: [tailwindPlugin()] } },
       server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
