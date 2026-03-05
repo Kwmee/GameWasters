@@ -59,6 +59,6 @@ export function getDb(): Database.Database {
 /** Proxy para compatibilidad: código que usa `db.prepare()` sigue funcionando sin tocar la DB hasta el primer uso. */
 export const db = new Proxy({} as Database.Database, {
   get(_, prop: string) {
-    return (getDb() as Record<string, unknown>)[prop];
+    return (getDb() as unknown as Record<string, unknown>)[prop];
   },
 });

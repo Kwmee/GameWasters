@@ -83,7 +83,6 @@ export default function DealsCarousel({ deals }: Props) {
             </div>
             <div className="p-4 flex flex-col flex-grow">
               <h3 className="text-sm font-bold text-white mb-1 line-clamp-1 hover:text-[#66c0f4] transition-colors">{deal.title}</h3>
-              <p className="text-xs text-gray-500 mb-3">{t('deals.appId')}: {deal.steamId}</p>
               <div className="mt-auto flex justify-between items-end">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 line-through">${(deal.currentPrice / (1 - deal.discount / 100)).toFixed(2)}</span>

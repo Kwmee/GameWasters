@@ -23,7 +23,10 @@ export default function App() {
 
     const handleMessage = (event: MessageEvent) => {
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+      const isSameOrigin = origin === window.location.origin;
+      const isLocalOrigin =
+        origin.includes('localhost') || origin.includes('127.0.0.1');
+      if (!isSameOrigin && !isLocalOrigin) {
         return;
       }
       if (event.data?.type === 'STEAM_AUTH_SUCCESS' && event.data?.steamId) {

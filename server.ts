@@ -25,6 +25,8 @@ const DEALS_CANDIDATE_POOL = 60;
 const DEALS_RESPONSE_LIMIT = 12;
 const TOP_STEAM_LIMIT = 100;
 const TOP_STEAM_RESPONSE_LIMIT = 30;
+const HISTORICAL_MIN_DISCOUNT = 50;
+const HISTORICAL_SAMPLE_LIMIT = 12;
 
 /** Escapa caracteres peligrosos para interpolación segura dentro de strings JS en HTML */
 function escapeForJs(str: string): string {
@@ -38,10 +40,9 @@ function escapeForJs(str: string): string {
     .replace(/\r/g, "\\r");
 }
 
-async function startServer() {
+export async function createApp() {
   // DB se inicializa de forma perezosa al primer uso (evita fallos en Vercel en rutas que no usan DB)
   const app = express();
-  const PORT = 3000;
 
   const resolveRealSteamId = (req: express.Request): string | null => {
     const sessionRealSteamId = (req.session as any)?.realSteamId as
@@ -234,11 +235,12 @@ async function startServer() {
   };
 
   app.get("/api/auth/steam/url", (_req, res) => {
+    const localPort = Number(process.env.PORT || 3000);
     const appUrl =
       config.APP_URL ||
       (process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : `http://localhost:${PORT}`);
+        : `http://localhost:${localPort}`);
     const returnUrl = `${appUrl}/api/auth/steam/return`;
     const realm = appUrl;
 
@@ -284,7 +286,9 @@ async function startServer() {
         expiresIn: "7d",
       });
 
-      syncUserLibrary(hashedSteamId, realSteamId || "").catch(console.error);
+      if (!process.env.VERCEL) {
+        syncUserLibrary(hashedSteamId, realSteamId || "").catch(console.error);
+      }
 
       res.send(`
         <html>
@@ -327,6 +331,8 @@ async function startServer() {
     const realSteamId = resolveRealSteamId(req);
     const isAuth = req.query.steamId as string;
     const hashedSteamId = getHashedSteamId(req, realSteamId);
+    const isBaseGame = (details: any): boolean =>
+      details?.type === "game" && !details?.fullgame;
 
     try {
       const specials = await steamService.getSpecials();
@@ -362,16 +368,30 @@ async function startServer() {
                 appId,
                 title: details?.name || `Juego ${appId}`,
                 gameGenres,
+                isBaseGame: isBaseGame(details),
               };
-            });
+            })
+            .filter((candidate) => candidate.isBaseGame);
 
           const rankedCandidates = scoreGamesByGenreWeights(genreWeights, candidates);
           recommendedAppIds = rankedCandidates.map((game) => game.appId);
         } else {
           recommendedAppIds.sort(() => Math.random() - 0.5);
+          const gameDetails = await steamService.getAppDetails(
+            recommendedAppIds.slice(0, DEALS_CANDIDATE_POOL),
+          );
+          recommendedAppIds = recommendedAppIds
+            .slice(0, DEALS_CANDIDATE_POOL)
+            .filter((appId) => isBaseGame(gameDetails[appId]));
         }
       } else {
         recommendedAppIds.sort(() => Math.random() - 0.5);
+        const gameDetails = await steamService.getAppDetails(
+          recommendedAppIds.slice(0, DEALS_CANDIDATE_POOL),
+        );
+        recommendedAppIds = recommendedAppIds
+          .slice(0, DEALS_CANDIDATE_POOL)
+          .filter((appId) => isBaseGame(gameDetails[appId]));
       }
 
       recommendedAppIds = recommendedAppIds.slice(0, DEALS_RESPONSE_LIMIT);
@@ -407,6 +427,79 @@ async function startServer() {
       res.json({ success: true, data: deals });
     } catch (error) {
       console.error("Error obteniendo ofertas reales:", error);
+      res.status(500).json({ success: false, error: "Error interno del servidor" });
+    }
+  });
+
+  app.get("/api/deals/historical-lows", async (req, res) => {
+    const realSteamId = resolveRealSteamId(req);
+
+    try {
+      const specials = await steamService.getSpecials();
+      let candidates = specials.filter(
+        (item: any) => item?.id != null && Number(item?.discount_percent || 0) >= HISTORICAL_MIN_DISCOUNT,
+      );
+
+      if (realSteamId) {
+        const ownedGames = await steamService.getOwnedGames(realSteamId);
+        const ownedAppIds = new Set(ownedGames.map((game) => game.appid));
+        candidates = candidates.filter((item: any) => !ownedAppIds.has(item.id));
+      }
+
+      candidates.sort((a: any, b: any) => {
+        const discountA = Number(a?.discount_percent || 0);
+        const discountB = Number(b?.discount_percent || 0);
+        if (discountB !== discountA) {
+          return discountB - discountA;
+        }
+
+        const priceA = Number(a?.final_price || 0);
+        const priceB = Number(b?.final_price || 0);
+        return priceA - priceB;
+      });
+
+      const selected = candidates.slice(0, HISTORICAL_SAMPLE_LIMIT);
+      const appIds = selected.map((item: any) => item.id).filter((id: unknown): id is number => typeof id === "number");
+
+      if (appIds.length === 0) {
+        return res.json({ success: true, data: [], meta: { minDiscount: HISTORICAL_MIN_DISCOUNT } });
+      }
+
+      const prices = await steamService.getGamePrices(appIds);
+      const deals = selected.map((item: any) => {
+        const appId = Number(item.id);
+        const priceInfo = prices[appId];
+        const currentPrice = priceInfo
+          ? priceInfo.final / 100
+          : Number(item?.final_price || 0) / 100;
+        const discount = priceInfo
+          ? priceInfo.discount_percent
+          : Number(item?.discount_percent || 0);
+        const title = item?.name || `Juego ${appId}`;
+        const image =
+          item?.header_image ||
+          item?.large_capsule_image ||
+          `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
+
+        return {
+          steamId: appId.toString(),
+          title,
+          currentPrice,
+          discount,
+          image,
+        };
+      });
+
+      res.json({
+        success: true,
+        data: deals,
+        meta: {
+          minDiscount: HISTORICAL_MIN_DISCOUNT,
+          sampleSize: deals.length,
+        },
+      });
+    } catch (error) {
+      console.error("Error obteniendo minimos historicos:", error);
       res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
   });
@@ -599,9 +692,17 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
+  return app;
+}
+
+export async function startServer() {
+  const app = await createApp();
+  const PORT = Number(process.env.PORT || 3000);
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}

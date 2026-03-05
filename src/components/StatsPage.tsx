@@ -27,7 +27,7 @@ function StatRow({ label, value, accent }: { label: string; value: string; accen
 }
 
 export default function StatsPage() {
-  const { t } = useI18n();
+  const { t, translateGenre } = useI18n();
   const { isAuthenticated, topGenres } = useStore();
 
   if (!isAuthenticated) {
@@ -37,7 +37,7 @@ export default function StatsPage() {
   const totalPlaytime = topGenres.reduce((sum, g) => sum + g.playtime, 0);
   const totalGames = topGenres.reduce((sum, g) => sum + g.gamesCount, 0);
   const avgPerGame = totalGames > 0 ? Math.round(totalPlaytime / totalGames) : 0;
-  const mostPlayed = topGenres.length > 0 ? topGenres[0].name : '-';
+  const mostPlayed = topGenres.length > 0 ? translateGenre(topGenres[0].name) : '-';
 
   const estimatedValue = totalGames * 18.5;
   const potentialSavings = Math.round(estimatedValue * 0.35);
