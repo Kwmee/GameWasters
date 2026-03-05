@@ -127,7 +127,24 @@ export class SteamService {
       const response = await fetch(`${this.storeUrl}/featuredcategories/`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      return data.specials?.items || [];
+      
+      // Combinamos varias categorías para tener un pool más grande de ofertas
+      const allItems = [
+        ...(data.specials?.items || []),
+        ...(data.top_sellers?.items || []),
+        ...(data.new_releases?.items || []),
+        ...(data.under_ten?.items || [])
+      ];
+      
+      // Filtramos duplicados y nos quedamos solo con los que tienen descuento
+      const uniqueItems = new Map();
+      allItems.forEach(item => {
+        if (item.id && item.discount_percent > 0 && !uniqueItems.has(item.id)) {
+          uniqueItems.set(item.id, item);
+        }
+      });
+      
+      return Array.from(uniqueItems.values());
     } catch (error) {
       console.error(`[SteamService] Error obteniendo ofertas destacadas:`, error);
       return [];

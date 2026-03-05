@@ -200,8 +200,11 @@ async function startServer() {
 
         // 2.2 Ordenar las recomendaciones basándonos en si coinciden con los top géneros
         if (topGenres.length > 0) {
+          // Primero, mezclamos aleatoriamente (shuffle) para dar variedad a juegos con el mismo score
+          recommendedAppIds.sort(() => Math.random() - 0.5);
+
           // Obtenemos los géneros de las recomendaciones
-          const recommendedDetails = await steamService.getAppDetails(recommendedAppIds.slice(0, 30)); // Limitamos para no saturar
+          const recommendedDetails = await steamService.getAppDetails(recommendedAppIds.slice(0, 40)); // Aumentamos un poco el límite
           
           recommendedAppIds.sort((a, b) => {
             const detailsA = recommendedDetails[a];
@@ -217,6 +220,9 @@ async function startServer() {
             return scoreB - scoreA; // Orden descendente
           });
         }
+      } else {
+        // Si no está logueado, también mezclamos un poco para dar variedad
+        recommendedAppIds.sort(() => Math.random() - 0.5);
       }
 
       // Tomamos las 12 mejores ofertas
@@ -239,12 +245,15 @@ async function startServer() {
         const discount = priceInfo ? priceInfo.discount_percent : (specialItem?.discount_percent || 0);
         const title = specialItem?.name || `Juego ${appId}`;
         
+        // Usamos la imagen oficial del specialItem si existe, si no, usamos el CDN principal de Steam
+        const image = specialItem?.header_image || specialItem?.large_capsule_image || `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
+        
         return {
           steamId: appId.toString(),
           title: title,
           currentPrice: currentPrice,
           discount: discount,
-          image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`
+          image: image
         };
       });
 
