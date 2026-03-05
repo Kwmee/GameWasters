@@ -664,8 +664,8 @@ export async function createApp() {
         : 0;
       const perfectGames = achievements.filter((a) => a.completionPercent === 100).length;
 
-      // Inventory value estimation (based on game count and playtime)
-      const estimatedInventoryValue = Math.round(totalGames * 12.5 + gamesPlayed * 5);
+      // Inventory value estimation in EUR (based on game count and playtime)
+      const estimatedInventoryValue = Math.round(totalGames * 11.63 + gamesPlayed * 4.65);
 
       // Player score (composite ranking metric)
       const playerScore = Math.round(

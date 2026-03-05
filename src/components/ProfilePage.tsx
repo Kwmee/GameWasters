@@ -4,6 +4,12 @@ import { useI18n } from '../i18n/useI18n';
 import { Navigate } from 'react-router-dom';
 import { Trophy, Crown, Swords, Package, Clock, Gamepad2, Medal, Users } from 'lucide-react';
 
+const EUR_FORMATTER = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+
 const RANK_COLORS: Record<string, string> = {
   Diamond: 'from-cyan-400 to-blue-500',
   Platinum: 'from-gray-300 to-gray-500',
@@ -101,7 +107,7 @@ export default function ProfilePage() {
         </div>
         <div className="bg-[#171a21] rounded-xl p-5 border border-[#2a475e] text-center">
           <Package className="w-6 h-6 text-[#f4c866] mx-auto mb-2" />
-          <p className="text-2xl font-bold text-[#f4c866]">${summary.estimatedInventoryValue}</p>
+          <p className="text-2xl font-bold text-[#f4c866]">{EUR_FORMATTER.format(summary.estimatedInventoryValue)}</p>
           <p className="text-xs text-gray-500">{t('profile.inventoryValue')}</p>
         </div>
         <div className="bg-[#171a21] rounded-xl p-5 border border-[#2a475e] text-center">
