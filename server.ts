@@ -1,14 +1,22 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import session from "express-session";
-import { config } from "./src/config";
-import { steamService } from "./src/services/steamService";
 import jwt from "jsonwebtoken";
+import { createServer as createViteServer } from "vite";
+import { config } from "./src/config";
 import { initializeDatabase } from "./src/db/sqlite";
-import { getEncryptedSteamIdByHashedId, upsertUser } from "./src/repositories/userRepository";
+import {
+  getEncryptedSteamIdByHashedId,
+  upsertUser,
+} from "./src/repositories/userRepository";
+import {
+  type UserGenreStatInput,
+  upsertUserGenreStats,
+} from "./src/repositories/userGenreStatsRepository";
 import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher";
+import { steamService } from "./src/services/steamService";
 
 const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
+const MAX_STORED_GENRES = 15;
 
 async function startServer() {
   initializeDatabase();
@@ -17,7 +25,9 @@ async function startServer() {
   const PORT = 3000;
 
   const resolveRealSteamId = (req: express.Request): string | null => {
-    const sessionRealSteamId = (req.session as any)?.realSteamId;
+    const sessionRealSteamId = (req.session as any)?.realSteamId as
+      | string
+      | undefined;
     if (sessionRealSteamId) {
       return sessionRealSteamId;
     }
@@ -40,152 +50,210 @@ async function startServer() {
     }
   };
 
-  app.use(express.json());
-  app.use(session({
-    secret: config.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: config.NODE_ENV === 'production',
-      sameSite: 'lax',
+  const buildTopGenreStats = async (
+    realSteamId: string,
+    limit: number = MAX_STORED_GENRES,
+  ): Promise<UserGenreStatInput[]> => {
+    const ownedGames = await steamService.getOwnedGames(realSteamId);
+    if (ownedGames.length === 0) {
+      return [];
     }
-  }));
 
-  // Middleware para verificar JWT
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        (req as any).user = decoded;
-      } catch (err) {
-        console.error("Error verificando JWT:", err);
+    // `gamesCount` se calcula sobre los 50 juegos mas jugados del usuario.
+    const topGames = ownedGames
+      .filter((g) => g.playtime_forever > 0)
+      .sort((a, b) => b.playtime_forever - a.playtime_forever)
+      .slice(0, 50);
+
+    if (topGames.length === 0) {
+      return [];
+    }
+
+    const appIds = topGames.map((g) => g.appid);
+    const appDetails = await steamService.getAppDetails(appIds);
+
+    const genrePlaytime: Record<string, number> = {};
+    const genreGameCount: Record<string, number> = {};
+    let totalPlaytime = 0;
+
+    topGames.forEach((game) => {
+      const details = appDetails[game.appid];
+      if (!details?.genres) {
+        return;
       }
-    }
-    next();
-  });
 
-  // Simulación de BackgroundTask de FastAPI en Node.js
+      totalPlaytime += game.playtime_forever;
+      details.genres.forEach((genre: any, index: number) => {
+        const weight = index === 0 ? 1 : 0.5;
+        genrePlaytime[genre.description] =
+          (genrePlaytime[genre.description] || 0) +
+          game.playtime_forever * weight;
+        genreGameCount[genre.description] =
+          (genreGameCount[genre.description] || 0) + 1;
+      });
+    });
+
+    if (totalPlaytime === 0 || Object.keys(genrePlaytime).length === 0) {
+      return [];
+    }
+
+    return Object.entries(genrePlaytime)
+      .map(([name, playtime]) => ({
+        name,
+        playtime: Math.round(playtime / 60),
+        gamesCount: genreGameCount[name] || 0,
+        percentage: Math.min(100, Math.round((playtime / totalPlaytime) * 100)),
+      }))
+      .sort((a, b) => b.playtime - a.playtime)
+      .slice(0, limit);
+  };
+
+  app.use(express.json());
+  app.use(
+    session({
+      secret: config.SESSION_SECRET,
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        secure: config.NODE_ENV === "production",
+        sameSite: "lax",
+      },
+    }),
+  );
+
+  app.use(
+    (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          (req as any).user = decoded;
+        } catch (err) {
+          console.error("Error verificando JWT:", err);
+        }
+      }
+      next();
+    },
+  );
+
   const syncUserLibrary = async (hashedSteamId: string, realSteamId: string) => {
-    console.log(`[Background Task] Iniciando sincronización de biblioteca para usuario: ${hashedSteamId}`);
-    
+    console.log(
+      `[Background Task] Iniciando sincronizacion de biblioteca para usuario: ${hashedSteamId}`,
+    );
+
     try {
-      // 1. Obtener lista de juegos (Steam Web API)
-      console.log(`[Background Task] 1. Obteniendo juegos desde Steam Web API...`);
+      console.log("[Background Task] 1. Obteniendo juegos desde Steam Web API...");
       const ownedGames = await steamService.getOwnedGames(realSteamId);
       console.log(`[Background Task] -> ${ownedGames.length} juegos encontrados.`);
 
-      // 2. Obtener precios y ofertas directamente desde la tienda de Steam
-      console.log(`[Background Task] 2. Obteniendo precios desde Steam Store API...`);
-      const topGames = ownedGames.slice(0, 10); // Limitamos a 10 para no saturar la API
-      const appIds = topGames.map(g => g.appid);
-      
+      console.log("[Background Task] 2. Obteniendo precios desde Steam Store API...");
+      const topGames = ownedGames.slice(0, 10);
+      const appIds = topGames.map((g) => g.appid);
       const prices = await steamService.getGamePrices(appIds);
-      console.log(`[Background Task] -> Precios obtenidos para ${Object.keys(prices).length} juegos.`);
+      console.log(
+        `[Background Task] -> Precios obtenidos para ${Object.keys(prices).length} juegos.`,
+      );
 
-      // 3. Almacenar para alimentar el modelo SVD
-      console.log(`[Background Task] 3. Almacenando en SQLite (pendiente OwnedGames)...`);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log(`[Background Task] 4. Preparando modelo SVD (Singular Value Decomposition)...`);
-      console.log(`[Background Task] Configurando 7 factores latentes para optimizar Recall@10...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log(`[Background Task] ✅ Ingesta masiva completada para: ${hashedSteamId}`);
+      const topGenreStats = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
+      upsertUserGenreStats(hashedSteamId, topGenreStats);
+      console.log(
+        `[Background Task] 3. Estadisticas de genero guardadas en SQLite: ${topGenreStats.length}`,
+      );
+
+      console.log(
+        "[Background Task] 4. Preparando modelo SVD (Singular Value Decomposition)...",
+      );
+      console.log(
+        "[Background Task] Configurando 7 factores latentes para optimizar Recall@10...",
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log(`[Background Task] Ingesta masiva completada para: ${hashedSteamId}`);
     } catch (error) {
-      console.error(`[Background Task] ❌ Error durante la sincronización:`, error);
+      console.error("[Background Task] Error durante la sincronizacion:", error);
     }
   };
 
-  // Endpoint para obtener la URL de autenticación de Steam OpenID
-  app.get("/api/auth/steam/url", (req, res) => {
+  app.get("/api/auth/steam/url", (_req, res) => {
     const appUrl = config.APP_URL || `http://localhost:${PORT}`;
     const returnUrl = `${appUrl}/api/auth/steam/return`;
     const realm = appUrl;
 
     const params = new URLSearchParams({
-      'openid.ns': 'http://specs.openid.net/auth/2.0',
-      'openid.mode': 'checkid_setup',
-      'openid.return_to': returnUrl,
-      'openid.realm': realm,
-      'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
-      'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
+      "openid.ns": "http://specs.openid.net/auth/2.0",
+      "openid.mode": "checkid_setup",
+      "openid.return_to": returnUrl,
+      "openid.realm": realm,
+      "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
+      "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
     });
 
     res.json({ url: `https://steamcommunity.com/openid/login?${params.toString()}` });
   });
 
-  // Endpoint de autenticación mediante el flujo ValidateResults para Steam OpenID
   app.get("/api/auth/steam/return", async (req, res) => {
     try {
-      const claimedId = req.query['openid.claimed_id'] as string;
-    const realSteamId = claimedId ? claimedId.split('/').pop() : '76561197960435530'; // ID de prueba si falla
+      const claimedId = req.query["openid.claimed_id"] as string;
+      const realSteamId = claimedId
+        ? claimedId.split("/").pop()
+        : "76561197960435530";
 
-    // Pseudonimización del SteamID por privacidad
-    const hashedSteamId = steamService.hashSteamId(realSteamId || '');
+      const hashedSteamId = steamService.hashSteamId(realSteamId || "");
 
-    // Guardar el ID real en la sesión para poder hacer llamadas a la API
-    if (req.session) {
-      (req.session as any).realSteamId = realSteamId;
-    }
+      if (req.session) {
+        (req.session as any).realSteamId = realSteamId;
+      }
 
-    // Obtener el perfil real del usuario (Nombre y Avatar)
-    const profile = await steamService.getPlayerSummary(realSteamId || '');
-    const steamName = profile?.personaname || 'Usuario de Steam';
-    const steamAvatar = profile?.avatarfull || '';
-    const encryptedSteamId = encryptSteamId(realSteamId || '');
+      const profile = await steamService.getPlayerSummary(realSteamId || "");
+      const steamName = profile?.personaname || "Usuario de Steam";
+      const steamAvatar = profile?.avatarfull || "";
+      const encryptedSteamId = encryptSteamId(realSteamId || "");
 
-    // Guardado basico del usuario en SQLite (upsert)
-    upsertUser({
-      hashedSteamId,
-      encryptedSteamId,
-      username: steamName,
-      steamName,
-      steamAvatar,
-    });
+      upsertUser({
+        hashedSteamId,
+        encryptedSteamId,
+        username: steamName,
+        steamName,
+        steamAvatar,
+      });
 
-    // Generar JWT
-    const token = jwt.sign(
-      { steamId: hashedSteamId },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+      const token = jwt.sign({ steamId: hashedSteamId }, JWT_SECRET, {
+        expiresIn: "7d",
+      });
 
-    // Ejecutar tarea en segundo plano sin bloquear la respuesta (equivalente a BackgroundTasks)
-    syncUserLibrary(hashedSteamId, realSteamId || '').catch(console.error);
+      syncUserLibrary(hashedSteamId, realSteamId || "").catch(console.error);
 
-    // Enviar mensaje de éxito a la ventana padre (iframe) y cerrar el popup
       res.send(`
-      <html>
-        <head>
-          <title>Autenticación Exitosa</title>
-          <style>
-            body { background-color: #1b2838; color: #c7d5e0; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-            .card { background-color: #171a21; padding: 2rem; border-radius: 8px; text-align: center; border: 1px solid #2a475e; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <h2>¡Autenticación Exitosa!</h2>
-            <p>Conectado con Steam. Esta ventana se cerrará automáticamente...</p>
-          </div>
-          <script>
-            if (window.opener) {
-              window.opener.postMessage({ 
-                type: 'STEAM_AUTH_SUCCESS', 
-                steamId: '${hashedSteamId}',
-                steamName: '${steamName.replace(/'/g, "\\'")}',
-                steamAvatar: '${steamAvatar}',
-                token: '${token}'
-              }, '*');
-              setTimeout(() => window.close(), 1500);
-            } else {
-              window.location.href = '/?steamId=${hashedSteamId}';
-            }
-          </script>
-        </body>
-      </html>
+        <html>
+          <head>
+            <title>Autenticacion Exitosa</title>
+            <style>
+              body { background-color: #1b2838; color: #c7d5e0; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+              .card { background-color: #171a21; padding: 2rem; border-radius: 8px; text-align: center; border: 1px solid #2a475e; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h2>Autenticacion Exitosa</h2>
+              <p>Conectado con Steam. Esta ventana se cerrara automaticamente...</p>
+            </div>
+            <script>
+              if (window.opener) {
+                window.opener.postMessage({
+                  type: 'STEAM_AUTH_SUCCESS',
+                  steamId: '${hashedSteamId}',
+                  steamName: '${steamName.replace(/'/g, "\\'")}',
+                  steamAvatar: '${steamAvatar}',
+                  token: '${token}'
+                }, '*');
+                setTimeout(() => window.close(), 1500);
+              } else {
+                window.location.href = '/?steamId=${hashedSteamId}';
+              }
+            </script>
+          </body>
+        </html>
       `);
     } catch (error) {
       console.error("Error en autenticacion Steam:", error);
@@ -193,46 +261,40 @@ async function startServer() {
     }
   });
 
-  // Endpoint de Ofertas
   app.get("/api/deals", async (req, res) => {
-    // Resolver SteamID real desde sesión o SQLite (descifrado)
     const realSteamId = resolveRealSteamId(req);
     const isAuth = req.query.steamId as string;
-    
-    try {
-      // 1. Obtener las ofertas destacadas reales de la tienda de Steam
-      const specials = await steamService.getSpecials();
-      // Extraer IDs y eliminar duplicados (un juego puede estar en varias categorías)
-      let recommendedAppIds = Array.from(new Set(
-        specials.map((item: any) => item.id).filter((id: any) => id != null)
-      )) as number[];
 
-      // 2. Si el usuario está logueado, filtramos los juegos que YA TIENE y priorizamos por géneros
+    try {
+      const specials = await steamService.getSpecials();
+      let recommendedAppIds = Array.from(
+        new Set(specials.map((item: any) => item.id).filter((id: any) => id != null)),
+      ) as number[];
+
       if (isAuth && realSteamId) {
         const ownedGames = await steamService.getOwnedGames(realSteamId);
-        const ownedAppIds = new Set(ownedGames.map(g => g.appid));
-        
-        // Filtramos las ofertas para mostrar solo juegos que NO posee
-        recommendedAppIds = recommendedAppIds.filter((id: number) => !ownedAppIds.has(id));
+        const ownedAppIds = new Set(ownedGames.map((g) => g.appid));
+        recommendedAppIds = recommendedAppIds.filter(
+          (id: number) => !ownedAppIds.has(id),
+        );
 
-        // --- Lógica de priorización por géneros ---
-        // 2.1 Obtener los juegos más jugados para calcular los géneros favoritos
         const topGames = ownedGames
-          .filter(g => g.playtime_forever > 0)
+          .filter((g) => g.playtime_forever > 0)
           .sort((a, b) => b.playtime_forever - a.playtime_forever)
           .slice(0, 20);
 
-        const appIds = topGames.map(g => g.appid);
+        const appIds = topGames.map((g) => g.appid);
         const appDetails = await steamService.getAppDetails(appIds);
-
         const genrePlaytime: Record<string, number> = {};
-        
-        topGames.forEach(game => {
+
+        topGames.forEach((game) => {
           const details = appDetails[game.appid];
-          if (details && details.genres) {
+          if (details?.genres) {
             details.genres.forEach((genre: any, index: number) => {
               const weight = index === 0 ? 1 : 0.5;
-              genrePlaytime[genre.description] = (genrePlaytime[genre.description] || 0) + (game.playtime_forever * weight);
+              genrePlaytime[genre.description] =
+                (genrePlaytime[genre.description] || 0) +
+                game.playtime_forever * weight;
             });
           }
         });
@@ -240,64 +302,55 @@ async function startServer() {
         const topGenres = Object.entries(genrePlaytime)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 3)
-          .map(entry => entry[0]);
+          .map((entry) => entry[0]);
 
-        // 2.2 Ordenar las recomendaciones basándonos en si coinciden con los top géneros
         if (topGenres.length > 0) {
-          // Primero, mezclamos aleatoriamente (shuffle) para dar variedad a juegos con el mismo score
           recommendedAppIds.sort(() => Math.random() - 0.5);
+          const recommendedDetails = await steamService.getAppDetails(
+            recommendedAppIds.slice(0, 40),
+          );
 
-          // Obtenemos los géneros de las recomendaciones
-          const recommendedDetails = await steamService.getAppDetails(recommendedAppIds.slice(0, 40)); // Aumentamos un poco el límite
-          
           recommendedAppIds.sort((a, b) => {
             const detailsA = recommendedDetails[a];
             const detailsB = recommendedDetails[b];
-            
             const genresA = detailsA?.genres?.map((g: any) => g.description) || [];
             const genresB = detailsB?.genres?.map((g: any) => g.description) || [];
-            
-            // Calculamos un "score" basado en cuántos géneros coinciden con los favoritos
             const scoreA = genresA.filter((g: string) => topGenres.includes(g)).length;
             const scoreB = genresB.filter((g: string) => topGenres.includes(g)).length;
-            
-            return scoreB - scoreA; // Orden descendente
+            return scoreB - scoreA;
           });
         }
       } else {
-        // Si no está logueado, también mezclamos un poco para dar variedad
         recommendedAppIds.sort(() => Math.random() - 0.5);
       }
 
-      // Tomamos las 12 mejores ofertas
       recommendedAppIds = recommendedAppIds.slice(0, 12);
-
       if (recommendedAppIds.length === 0) {
         return res.json({ success: true, data: [] });
       }
 
-      // 3. Obtener precios reales y actualizados de la tienda de Steam
       const prices = await steamService.getGamePrices(recommendedAppIds);
-      
-      // 4. Formatear la respuesta para el frontend
       const deals = recommendedAppIds.map((appId: number) => {
         const priceInfo = prices[appId];
         const specialItem = specials.find((s: any) => s.id === appId);
-        
-        // Steam devuelve los precios en centavos (ej. 1999 = $19.99)
-        const currentPrice = priceInfo ? priceInfo.final / 100 : (specialItem?.final_price / 100 || 0);
-        const discount = priceInfo ? priceInfo.discount_percent : (specialItem?.discount_percent || 0);
+        const currentPrice = priceInfo
+          ? priceInfo.final / 100
+          : (specialItem?.final_price || 0) / 100;
+        const discount = priceInfo
+          ? priceInfo.discount_percent
+          : specialItem?.discount_percent || 0;
         const title = specialItem?.name || `Juego ${appId}`;
-        
-        // Usamos la imagen oficial del specialItem si existe, si no, usamos el CDN principal de Steam
-        const image = specialItem?.header_image || specialItem?.large_capsule_image || `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
-        
+        const image =
+          specialItem?.header_image ||
+          specialItem?.large_capsule_image ||
+          `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`;
+
         return {
           steamId: appId.toString(),
-          title: title,
-          currentPrice: currentPrice,
-          discount: discount,
-          image: image
+          title,
+          currentPrice,
+          discount,
+          image,
         };
       });
 
@@ -308,7 +361,6 @@ async function startServer() {
     }
   });
 
-  // Endpoint de Análisis de Géneros
   app.get("/api/user/top-genres", async (req, res) => {
     const realSteamId = resolveRealSteamId(req);
     if (!realSteamId) {
@@ -316,62 +368,17 @@ async function startServer() {
     }
 
     try {
-      // 1. Obtener la biblioteca del usuario
-      const ownedGames = await steamService.getOwnedGames(realSteamId);
-      
-      if (ownedGames.length === 0) {
-        return res.json({ success: true, data: [] });
-      }
-
-      // 2. Tomar los juegos más jugados para no saturar la API (ej. top 20)
-      const topGames = ownedGames
-        .filter(g => g.playtime_forever > 0)
-        .sort((a, b) => b.playtime_forever - a.playtime_forever)
-        .slice(0, 20);
-
-      const appIds = topGames.map(g => g.appid);
-      
-      // 3. Obtener detalles de la tienda para esos juegos (para extraer los géneros)
-      const appDetails = await steamService.getAppDetails(appIds);
-      
-      const genrePlaytime: Record<string, number> = {};
-      let totalPlaytime = 0;
-      
-      topGames.forEach(game => {
-        const details = appDetails[game.appid];
-        if (details && details.genres) {
-          totalPlaytime += game.playtime_forever;
-          details.genres.forEach((genre: any, index: number) => {
-            // Damos más peso al primer género de la lista
-            const weight = index === 0 ? 1 : 0.5;
-            genrePlaytime[genre.description] = (genrePlaytime[genre.description] || 0) + (game.playtime_forever * weight);
-          });
-        }
-      });
-
-      // Si por alguna razón no pudimos obtener géneros (ej. rate limit), usamos un fallback
-      if (Object.keys(genrePlaytime).length === 0) {
-        return res.json({ success: true, data: [] });
-      }
-
-      // 4. Formatear y ordenar los resultados
-      const topGenres = Object.entries(genrePlaytime)
-        .map(([name, playtime]) => ({
-          name,
-          playtime: Math.round(playtime / 60), // Convertir minutos a horas
-          percentage: Math.min(100, Math.round((playtime / totalPlaytime) * 100))
-        }))
-        .sort((a, b) => b.playtime - a.playtime)
-        .slice(0, 5); // Top 5 géneros
-
+      const topGenres = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
+      const hashedSteamId =
+        (req as any).user?.steamId || steamService.hashSteamId(realSteamId);
+      upsertUserGenreStats(hashedSteamId, topGenres);
       res.json({ success: true, data: topGenres });
     } catch (error) {
-      console.error("Error analizando géneros:", error);
+      console.error("Error analizando generos:", error);
       res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
   });
 
-  // Vite middleware for development
   if (config.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

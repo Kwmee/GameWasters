@@ -13,6 +13,18 @@ CREATE TABLE IF NOT EXISTS Users (
     last_login DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de estadisticas de genero por usuario
+CREATE TABLE IF NOT EXISTS UserGenreStats (
+    hashed_steam_id TEXT NOT NULL,
+    genre_name TEXT NOT NULL,
+    playtime_hours INTEGER NOT NULL DEFAULT 0,
+    games_count INTEGER NOT NULL DEFAULT 0,
+    percentage INTEGER NOT NULL DEFAULT 0 CHECK(percentage >= 0 AND percentage <= 100),
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (hashed_steam_id, genre_name),
+    FOREIGN KEY (hashed_steam_id) REFERENCES Users(hashed_steam_id) ON DELETE CASCADE
+);
+
 -- Tabla de Juegos
 CREATE TABLE IF NOT EXISTS Games (
     app_id INTEGER PRIMARY KEY, -- Steam App ID
@@ -48,3 +60,4 @@ CREATE TABLE IF NOT EXISTS Deals (
 CREATE INDEX IF NOT EXISTS idx_ownedgames_playtime ON OwnedGames(playtime_forever DESC);
 CREATE INDEX IF NOT EXISTS idx_deals_discount ON Deals(discount_percentage DESC);
 CREATE INDEX IF NOT EXISTS idx_users_last_login ON Users(last_login DESC);
+CREATE INDEX IF NOT EXISTS idx_usergenrestats_updated ON UserGenreStats(updated_at DESC);

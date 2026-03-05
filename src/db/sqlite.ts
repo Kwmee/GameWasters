@@ -19,4 +19,17 @@ export function initializeDatabase(): void {
   const schemaPath = path.resolve(process.cwd(), "database", "schema.sql");
   const schema = fs.readFileSync(schemaPath, "utf-8");
   db.exec(schema);
+
+  const userGenreStatsColumns = db
+    .prepare("PRAGMA table_info(UserGenreStats)")
+    .all() as Array<{ name: string }>;
+  const hasGamesCount = userGenreStatsColumns.some(
+    (column) => column.name === "games_count",
+  );
+
+  if (!hasGamesCount) {
+    db.exec(
+      "ALTER TABLE UserGenreStats ADD COLUMN games_count INTEGER NOT NULL DEFAULT 0",
+    );
+  }
 }
