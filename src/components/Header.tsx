@@ -1,7 +1,7 @@
 import React from 'react';
-import { Gamepad2, BarChart3, Globe } from 'lucide-react';
+import { Gamepad2, BarChart3, Globe, User } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { useI18n } from '../i18n/useI18n';
+import { useI18n, LOCALE_OPTIONS } from '../i18n/useI18n';
 import SteamLoginButton from './SteamLoginButton';
 import { Link } from 'react-router-dom';
 
@@ -17,15 +17,24 @@ export default function Header() {
           <h1 className="text-2xl font-bold text-white tracking-wider">Game<span className="text-[#66c0f4]">Wasters</span></h1>
         </Link>
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setLocale(locale === 'es' ? 'en' : 'es')}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            <Globe className="w-4 h-4" />
-            <span>{t('lang.switch')}</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-4 h-4 text-gray-400" />
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as any)}
+              className="bg-[#2a475e] text-gray-300 text-sm rounded px-2 py-1 border border-[#2a475e] hover:border-[#66c0f4] focus:border-[#66c0f4] focus:outline-none transition-colors cursor-pointer"
+            >
+              {LOCALE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-6">
+              <Link to="/profile" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
+                <User className="w-5 h-5" />
+                <span className="text-sm font-medium hidden sm:inline">{t('header.profile')}</span>
+              </Link>
               <Link to="/stats" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
                 <BarChart3 className="w-5 h-5" />
                 <span className="text-sm font-medium hidden sm:inline">{t('header.stats')}</span>

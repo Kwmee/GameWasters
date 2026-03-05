@@ -1,9 +1,21 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import en from './locales/en.json';
 import es from './locales/es.json';
+import pt from './locales/pt.json';
+import de from './locales/de.json';
+import fr from './locales/fr.json';
 
-type Locale = 'en' | 'es';
-const translations: Record<Locale, Record<string, any>> = { en, es };
+export type Locale = 'es' | 'en' | 'pt' | 'de' | 'fr';
+
+export const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
+  { value: 'es', label: 'Espanol' },
+  { value: 'en', label: 'English' },
+  { value: 'pt', label: 'Portugues' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'fr', label: 'Francais' },
+];
+
+const translations: Record<Locale, Record<string, any>> = { en, es, pt, de, fr };
 
 interface I18nContext {
   locale: Locale;

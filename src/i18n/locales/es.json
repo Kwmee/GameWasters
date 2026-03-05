@@ -1,6 +1,7 @@
 {
   "header": {
     "stats": "Estadisticas",
+    "profile": "Perfil",
     "logout": "Cerrar sesion"
   },
   "hero": {
@@ -23,9 +24,18 @@
     "dealsTitle": "Ofertas del Momento",
     "syncing": "Sincronizando biblioteca...",
     "viewDeal": "Ver Oferta",
+    "viewGame": "Ver Juego",
     "appId": "App ID",
     "prev": "Anterior",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "personalizedDeals": "Ofertas personalizadas",
+    "topSteamAffinity": "Top Steam por afinidad",
+    "topSteamTitle": "Recomendados Top Steam",
+    "score": "Score",
+    "playingNow": "jugando ahora",
+    "popularityUnavailable": "Popularidad no disponible",
+    "genresUnavailable": "Generos no disponibles",
+    "noTopSteam": "No hay recomendaciones Top Steam disponibles todavia para tu perfil."
   },
   "stats": {
     "title": "Tus Estadisticas",
@@ -114,7 +124,24 @@
     "changesDesc": "Nos reservamos el derecho de modificar estos terminos. Los cambios se publicaran en esta pagina.",
     "back": "Volver al inicio"
   },
+  "profile": {
+    "loading": "Cargando perfil...",
+    "score": "Puntuacion",
+    "ofFriends": "de {count} amigos",
+    "totalPlaytime": "Tiempo total",
+    "gamesPlayed": "Juegos jugados",
+    "inventoryValue": "Valor inventario",
+    "achievementsUnlocked": "Logros desbloqueados",
+    "achievementsTitle": "Logros",
+    "avgCompletion": "Media completado",
+    "perfectGames": "Juegos perfectos",
+    "total": "Total",
+    "leaderboardTitle": "Ranking de Amigos",
+    "you": "tu",
+    "pts": "pts",
+    "topGameTitle": "Tu juego mas jugado"
+  },
   "lang": {
-    "switch": "English"
+    "name": "Espanol"
   }
 }

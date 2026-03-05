@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import StatsPage from './components/StatsPage';
+import ProfilePage from './components/ProfilePage';
 import PrivacyPage from './components/PrivacyPage';
 import TermsPage from './components/TermsPage';
 import Header from './components/Header';
@@ -43,6 +44,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/stats" element={<StatsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
             </Routes>
