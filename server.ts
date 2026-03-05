@@ -2,15 +2,6 @@ import express from "express";
 import session from "express-session";
 import jwt from "jsonwebtoken";
 import { config } from "./src/config";
-import {
-  getEncryptedSteamIdByHashedId,
-  upsertUser,
-} from "./src/repositories/userRepository";
-import {
-  type UserGenreStatInput,
-  getUserGenreStats,
-  upsertUserGenreStats,
-} from "./src/repositories/userGenreStatsRepository";
 import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher";
 import {
   computeGenreWeights,
@@ -18,6 +9,98 @@ import {
   type GenreWeights,
 } from "./src/services/recommendationService";
 import { steamService } from "./src/services/steamService";
+
+type UserGenreStatInput = {
+  name: string;
+  playtime: number;
+  gamesCount: number;
+  percentage: number;
+};
+
+type UserGenreStatsRow = {
+  hashedSteamId: string;
+  genreName: string;
+  playtimeHours: number;
+  gamesCount: number;
+  percentage: number;
+};
+
+type UpsertUserInput = {
+  hashedSteamId: string;
+  encryptedSteamId: string;
+  username: string | null;
+  steamName: string | null;
+  steamAvatar: string | null;
+};
+
+type StorageAdapter = {
+  getEncryptedSteamIdByHashedId: (hashedSteamId: string) => string | null;
+  upsertUser: (input: UpsertUserInput) => void;
+  getUserGenreStats: (hashedSteamId: string) => UserGenreStatsRow[];
+  upsertUserGenreStats: (hashedSteamId: string, stats: UserGenreStatInput[]) => void;
+  mode: "sqlite" | "memory";
+};
+
+const inMemoryUsers = new Map<string, UpsertUserInput>();
+const inMemoryGenreStats = new Map<string, UserGenreStatInput[]>();
+let storagePromise: Promise<StorageAdapter> | null = null;
+
+function createMemoryStorage(): StorageAdapter {
+  return {
+    mode: "memory",
+    getEncryptedSteamIdByHashedId(hashedSteamId: string) {
+      return inMemoryUsers.get(hashedSteamId)?.encryptedSteamId ?? null;
+    },
+    upsertUser(input: UpsertUserInput) {
+      inMemoryUsers.set(input.hashedSteamId, input);
+    },
+    getUserGenreStats(hashedSteamId: string): UserGenreStatsRow[] {
+      const stats = inMemoryGenreStats.get(hashedSteamId) || [];
+      return stats.map((stat) => ({
+        hashedSteamId,
+        genreName: stat.name,
+        playtimeHours: stat.playtime,
+        gamesCount: stat.gamesCount,
+        percentage: stat.percentage,
+      }));
+    },
+    upsertUserGenreStats(hashedSteamId: string, stats: UserGenreStatInput[]) {
+      inMemoryGenreStats.set(hashedSteamId, stats);
+    },
+  };
+}
+
+async function getStorage(): Promise<StorageAdapter> {
+  if (storagePromise) {
+    return storagePromise;
+  }
+
+  storagePromise = (async () => {
+    try {
+      const userRepository = await import("./src/repositories/userRepository");
+      const userGenreStatsRepository = await import(
+        "./src/repositories/userGenreStatsRepository"
+      );
+
+      return {
+        mode: "sqlite" as const,
+        getEncryptedSteamIdByHashedId:
+          userRepository.getEncryptedSteamIdByHashedId,
+        upsertUser: userRepository.upsertUser,
+        getUserGenreStats: userGenreStatsRepository.getUserGenreStats,
+        upsertUserGenreStats: userGenreStatsRepository.upsertUserGenreStats,
+      };
+    } catch (error) {
+      console.error(
+        "[Storage] SQLite no disponible en runtime. Usando almacenamiento en memoria.",
+        error,
+      );
+      return createMemoryStorage();
+    }
+  })();
+
+  return storagePromise;
+}
 
 const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
 const MAX_STORED_GENRES = 15;
@@ -43,6 +126,7 @@ function escapeForJs(str: string): string {
 export async function createApp() {
   // DB se inicializa de forma perezosa al primer uso (evita fallos en Vercel en rutas que no usan DB)
   const app = express();
+  const storage = await getStorage();
 
   const resolveRealSteamId = (req: express.Request): string | null => {
     const sessionRealSteamId = (req.session as any)?.realSteamId as
@@ -57,7 +141,7 @@ export async function createApp() {
       return null;
     }
 
-    const encryptedSteamId = getEncryptedSteamIdByHashedId(hashedSteamId);
+    const encryptedSteamId = storage.getEncryptedSteamIdByHashedId(hashedSteamId);
     if (!encryptedSteamId) {
       return null;
     }
@@ -146,7 +230,7 @@ export async function createApp() {
     hashedSteamId: string,
     realSteamId: string,
   ): Promise<GenreWeights> => {
-    let statsRows = getUserGenreStats(hashedSteamId);
+    let statsRows = storage.getUserGenreStats(hashedSteamId);
 
     if (statsRows.length === 0) {
       const computedStats = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
@@ -154,7 +238,7 @@ export async function createApp() {
         return {};
       }
 
-      upsertUserGenreStats(hashedSteamId, computedStats);
+      storage.upsertUserGenreStats(hashedSteamId, computedStats);
       statsRows = computedStats.map((stat) => ({
         hashedSteamId,
         genreName: stat.name,
@@ -215,7 +299,7 @@ export async function createApp() {
       );
 
       const topGenreStats = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
-      upsertUserGenreStats(hashedSteamId, topGenreStats);
+      storage.upsertUserGenreStats(hashedSteamId, topGenreStats);
       console.log(
         `[Background Task] 3. Estadisticas de genero guardadas en SQLite: ${topGenreStats.length}`,
       );
@@ -274,7 +358,7 @@ export async function createApp() {
       const steamAvatar = profile?.avatarfull || "";
       const encryptedSteamId = encryptSteamId(realSteamId || "");
 
-      upsertUser({
+      storage.upsertUser({
         hashedSteamId,
         encryptedSteamId,
         username: steamName,
@@ -665,7 +749,7 @@ export async function createApp() {
       const topGenres = await buildTopGenreStats(realSteamId, MAX_STORED_GENRES);
       const hashedSteamId =
         (req as any).user?.steamId || steamService.hashSteamId(realSteamId);
-      upsertUserGenreStats(hashedSteamId, topGenres);
+      storage.upsertUserGenreStats(hashedSteamId, topGenres);
       res.json({ success: true, data: topGenres });
     } catch (error) {
       console.error("Error analizando generos:", error);
