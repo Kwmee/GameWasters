@@ -1,45 +1,50 @@
--- Fase 1: Esquema de Base de Datos para Recomendación de Juegos (PostgreSQL)
+-- Fase 1: Esquema de Base de Datos para Recomendacion de Juegos (SQLite)
+PRAGMA foreign_keys = ON;
 
--- Tabla de Usuarios (Persons)
-CREATE TABLE Users (
-    id SERIAL PRIMARY KEY,
-    steam_id VARCHAR(255) UNIQUE NOT NULL, -- Pseudonimizado/Hasheado en la aplicación si es necesario
-    username VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
+-- Tabla de Usuarios
+CREATE TABLE IF NOT EXISTS Users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hashed_steam_id TEXT UNIQUE NOT NULL,
+    steam_id_encrypted TEXT NOT NULL,
+    username TEXT,
+    steam_name TEXT,
+    steam_avatar TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla de Juegos (Areas/Roads adaptado)
-CREATE TABLE Games (
+-- Tabla de Juegos
+CREATE TABLE IF NOT EXISTS Games (
     app_id INTEGER PRIMARY KEY, -- Steam App ID
-    title VARCHAR(255) NOT NULL,
-    developer VARCHAR(255),
-    publisher VARCHAR(255),
+    title TEXT NOT NULL,
+    developer TEXT,
+    publisher TEXT,
     release_date DATE,
-    genres TEXT[]
+    genres TEXT -- JSON string con el array de generos
 );
 
--- Tabla de Bibliotecas / Tiempo de Juego (Interacciones para el Filtrado Colaborativo)
-CREATE TABLE OwnedGames (
+-- Tabla de Bibliotecas / Tiempo de Juego
+CREATE TABLE IF NOT EXISTS OwnedGames (
     user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE,
     game_id INTEGER REFERENCES Games(app_id) ON DELETE CASCADE,
-    playtime_forever INTEGER DEFAULT 0, -- Métrica implícita principal para el SVD
+    playtime_forever INTEGER DEFAULT 0,
     playtime_2weeks INTEGER DEFAULT 0,
-    last_played TIMESTAMP,
+    last_played DATETIME,
     PRIMARY KEY (user_id, game_id)
 );
 
--- Tabla de Ofertas (IsThereAnyDeal data)
-CREATE TABLE Deals (
-    id SERIAL PRIMARY KEY,
+-- Tabla de Ofertas
+CREATE TABLE IF NOT EXISTS Deals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER REFERENCES Games(app_id) ON DELETE CASCADE,
-    current_price DECIMAL(10, 2),
-    historical_low DECIMAL(10, 2),
+    current_price REAL,
+    historical_low REAL,
     discount_percentage INTEGER,
-    url VARCHAR(512),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    url TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Índices para optimizar las consultas del sistema de recomendación
-CREATE INDEX idx_ownedgames_playtime ON OwnedGames(playtime_forever DESC);
-CREATE INDEX idx_deals_discount ON Deals(discount_percentage DESC);
+-- Indices para optimizar consultas
+CREATE INDEX IF NOT EXISTS idx_ownedgames_playtime ON OwnedGames(playtime_forever DESC);
+CREATE INDEX IF NOT EXISTS idx_deals_discount ON Deals(discount_percentage DESC);
+CREATE INDEX IF NOT EXISTS idx_users_last_login ON Users(last_login DESC);

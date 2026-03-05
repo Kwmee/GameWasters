@@ -4,12 +4,41 @@ import session from "express-session";
 import { config } from "./src/config";
 import { steamService } from "./src/services/steamService";
 import jwt from "jsonwebtoken";
+import { initializeDatabase } from "./src/db/sqlite";
+import { getEncryptedSteamIdByHashedId, upsertUser } from "./src/repositories/userRepository";
+import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher";
 
 const JWT_SECRET = config.SESSION_SECRET || "super-secret-key-for-jwt";
 
 async function startServer() {
+  initializeDatabase();
+
   const app = express();
   const PORT = 3000;
+
+  const resolveRealSteamId = (req: express.Request): string | null => {
+    const sessionRealSteamId = (req.session as any)?.realSteamId;
+    if (sessionRealSteamId) {
+      return sessionRealSteamId;
+    }
+
+    const hashedSteamId = (req as any).user?.steamId as string | undefined;
+    if (!hashedSteamId) {
+      return null;
+    }
+
+    const encryptedSteamId = getEncryptedSteamIdByHashedId(hashedSteamId);
+    if (!encryptedSteamId) {
+      return null;
+    }
+
+    try {
+      return decryptSteamId(encryptedSteamId);
+    } catch (error) {
+      console.error("Error descifrando steam_id desde SQLite:", error);
+      return null;
+    }
+  };
 
   app.use(express.json());
   app.use(session({
@@ -55,8 +84,8 @@ async function startServer() {
       const prices = await steamService.getGamePrices(appIds);
       console.log(`[Background Task] -> Precios obtenidos para ${Object.keys(prices).length} juegos.`);
 
-      // 3. Almacenar en PostgreSQL para alimentar el modelo SVD
-      console.log(`[Background Task] 3. Almacenando en PostgreSQL (Mock)...`);
+      // 3. Almacenar para alimentar el modelo SVD
+      console.log(`[Background Task] 3. Almacenando en SQLite (pendiente OwnedGames)...`);
       await new Promise(resolve => setTimeout(resolve, 500));
       
       console.log(`[Background Task] 4. Preparando modelo SVD (Singular Value Decomposition)...`);
@@ -89,7 +118,8 @@ async function startServer() {
 
   // Endpoint de autenticación mediante el flujo ValidateResults para Steam OpenID
   app.get("/api/auth/steam/return", async (req, res) => {
-    const claimedId = req.query['openid.claimed_id'] as string;
+    try {
+      const claimedId = req.query['openid.claimed_id'] as string;
     const realSteamId = claimedId ? claimedId.split('/').pop() : '76561197960435530'; // ID de prueba si falla
 
     // Pseudonimización del SteamID por privacidad
@@ -104,10 +134,20 @@ async function startServer() {
     const profile = await steamService.getPlayerSummary(realSteamId || '');
     const steamName = profile?.personaname || 'Usuario de Steam';
     const steamAvatar = profile?.avatarfull || '';
+    const encryptedSteamId = encryptSteamId(realSteamId || '');
+
+    // Guardado basico del usuario en SQLite (upsert)
+    upsertUser({
+      hashedSteamId,
+      encryptedSteamId,
+      username: steamName,
+      steamName,
+      steamAvatar,
+    });
 
     // Generar JWT
     const token = jwt.sign(
-      { steamId: hashedSteamId, realSteamId: realSteamId },
+      { steamId: hashedSteamId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -116,7 +156,7 @@ async function startServer() {
     syncUserLibrary(hashedSteamId, realSteamId || '').catch(console.error);
 
     // Enviar mensaje de éxito a la ventana padre (iframe) y cerrar el popup
-    res.send(`
+      res.send(`
       <html>
         <head>
           <title>Autenticación Exitosa</title>
@@ -146,13 +186,17 @@ async function startServer() {
           </script>
         </body>
       </html>
-    `);
+      `);
+    } catch (error) {
+      console.error("Error en autenticacion Steam:", error);
+      res.status(500).send("Error interno durante autenticacion");
+    }
   });
 
   // Endpoint de Ofertas
   app.get("/api/deals", async (req, res) => {
-    // Usar el ID real guardado en el JWT, o en la sesión, o el ID genérico si no hay sesión
-    const realSteamId = (req as any).user?.realSteamId || (req.session as any)?.realSteamId;
+    // Resolver SteamID real desde sesión o SQLite (descifrado)
+    const realSteamId = resolveRealSteamId(req);
     const isAuth = req.query.steamId as string;
     
     try {
@@ -266,7 +310,7 @@ async function startServer() {
 
   // Endpoint de Análisis de Géneros
   app.get("/api/user/top-genres", async (req, res) => {
-    const realSteamId = (req as any).user?.realSteamId;
+    const realSteamId = resolveRealSteamId(req);
     if (!realSteamId) {
       return res.status(401).json({ success: false, error: "No autorizado" });
     }

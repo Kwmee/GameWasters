@@ -17,6 +17,8 @@ const configSchema = z.object({
   SESSION_SECRET: z.string().default('super-secret-key'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_URL: z.string().url().optional(),
+  SQLITE_DB_PATH: z.string().default('./database/app.db'),
+  STEAM_ID_ENCRYPTION_SECRET: z.string().min(16).default('change-this-secret-in-env'),
 });
 
 // Validar y exportar la configuración
@@ -31,6 +33,8 @@ const parseConfig = () => {
       SESSION_SECRET: process.env.SESSION_SECRET || 'super-secret-key',
       NODE_ENV: process.env.NODE_ENV || 'development',
       APP_URL: process.env.APP_URL,
+      SQLITE_DB_PATH: process.env.SQLITE_DB_PATH || './database/app.db',
+      STEAM_ID_ENCRYPTION_SECRET: process.env.STEAM_ID_ENCRYPTION_SECRET || 'change-this-secret-in-env',
     };
   }
 };
