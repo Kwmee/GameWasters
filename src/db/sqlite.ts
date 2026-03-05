@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
-import { config } from "../config";
+import { config } from "../config.js";
 
 let _db: Database.Database | null = null;
 let _initialized = false;

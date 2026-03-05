@@ -1,14 +1,14 @@
 import express from "express";
 import session from "express-session";
 import jwt from "jsonwebtoken";
-import { config } from "./src/config";
-import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher";
+import { config } from "./src/config.js";
+import { decryptSteamId, encryptSteamId } from "./src/security/steamIdCipher.js";
 import {
   computeGenreWeights,
   scoreGamesByGenreWeights,
   type GenreWeights,
-} from "./src/services/recommendationService";
-import { steamService } from "./src/services/steamService";
+} from "./src/services/recommendationService.js";
+import { steamService } from "./src/services/steamService.js";
 
 type UserGenreStatInput = {
   name: string;
@@ -77,9 +77,9 @@ async function getStorage(): Promise<StorageAdapter> {
 
   storagePromise = (async () => {
     try {
-      const userRepository = await import("./src/repositories/userRepository");
+      const userRepository = await import("./src/repositories/userRepository.js");
       const userGenreStatsRepository = await import(
-        "./src/repositories/userGenreStatsRepository"
+        "./src/repositories/userGenreStatsRepository.js"
       );
 
       return {
