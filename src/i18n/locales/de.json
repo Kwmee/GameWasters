@@ -1,0 +1,179 @@
+{
+  "header": {
+    "stats": "Statistiken",
+    "profile": "Profil",
+    "logout": "Abmelden"
+  },
+  "hero": {
+    "title1": "Entdecke dein naechstes Lieblingsspiel.",
+    "title2": "Zum besten Preis.",
+    "subtitle": "Wir nutzen Kuenstliche Intelligenz und kollaboratives Filtern basierend auf deiner",
+    "subtitleBold": "Spielebibliothek",
+    "subtitle2": "um personalisierte Spiele zu empfehlen. Ausserdem zeigen wir Store-Angebote und besonders die besten Rabatte."
+  },
+  "features": {
+    "svdTitle": "Aktuelle Angebote",
+    "svdDesc": "Hier kannst du die aktuell verfuegbaren Angebote im Steam Store sehen.",
+    "playtimeTitle": "Personalisierte Empfehlungen",
+    "playtimeDesc": "Wir analysieren deine echte Spielzeit, die genaueste Metrik, um deine Vorlieben als Spieler zu verstehen.",
+    "dealsTitle": "Beste Angebote",
+    "dealsDesc": "Wir zeigen dir die besten aktuellen Store-Angebote. Nur Rabatte von 50% oder mehr!",
+    "historicalButton": "Beste Angebote ansehen"
+  },
+  "deals": {
+    "recommendationsTitle": "Angebote auf Steam",
+    "dealsTitle": "Aktuelle Angebote",
+    "syncing": "Bibliothek wird synchronisiert...",
+    "viewDeal": "Angebot ansehen",
+    "viewGame": "Spiel ansehen",
+    "appId": "App ID",
+    "prev": "Zurueck",
+    "next": "Weiter",
+    "personalizedDeals": "Aktuelle Angebote",
+    "historicalTab": "Beste Angebote",
+    "historicalTitle": "Historische Tiefstpreise (>= 50%)",
+    "topSteamAffinity": "Personalisierte Empfehlungen",
+    "topSteamTitle": "Personalisierte Empfehlungen",
+    "score": "Score",
+    "playingNow": "spielen gerade",
+    "popularityUnavailable": "Beliebtheit nicht verfuegbar",
+    "genresUnavailable": "Genres nicht verfuegbar",
+    "noTopSteam": "Noch keine personalisierten Empfehlungen fuer dein Profil verfuegbar.",
+    "noHistorical": "Aktuell sind keine historischen Tiefstpreis-Angebote verfuegbar."
+  },
+  "stats": {
+    "title": "Deine Statistiken",
+    "subtitle": "Analyse basierend auf deiner echten Steam-Spielzeit.",
+    "topGenresTitle": "Deine Lieblingsgenres",
+    "noGenreData": "Nicht genug Daten, um deine Genres zu analysieren.",
+    "totalPlaytimeTitle": "Gesamtzeit",
+    "hours": "Stunden",
+    "games": "Spiele",
+    "avgPerGame": "Durchschnitt pro Spiel",
+    "mostPlayedGenre": "Meistgespieltes Genre",
+    "libraryValueTitle": "Bibliothekswert",
+    "estimatedValue": "Geschaetzter Wert",
+    "potentialSavings": "Potenzielle Ersparnis",
+    "gamesOnSale": "Spiele im Angebot",
+    "activityTitle": "Letzte Aktivitaet",
+    "last2Weeks": "Letzte 2 Wochen",
+    "activeGames": "Aktive Spiele",
+    "avgSession": "Durchschn. Sitzung",
+    "comingSoon": "Mehr Statistiken bald",
+    "comingSoonDesc": "Wir arbeiten daran, mehr Daten ueber deine Spielgewohnheiten zu integrieren, z. B. nie gespielte Spiele, abgeschlossene Erfolge und mehr."
+  },
+  "footer": {
+    "description": "Intelligente Empfehlungen basierend auf deiner echten Spielzeit.",
+    "legal": "Rechtliches",
+    "privacy": "Datenschutzrichtlinie",
+    "terms": "Nutzungsbedingungen",
+    "resources": "Ressourcen",
+    "steamStore": "Steam Store",
+    "about": "Ueber uns",
+    "rights": "Alle Rechte vorbehalten.",
+    "disclaimer": "Nicht mit Valve Corporation verbunden. Steam und das Steam-Logo sind Marken der Valve Corporation."
+  },
+  "privacy": {
+    "title": "Datenschutzrichtlinie",
+    "lastUpdated": "Letzte Aktualisierung",
+    "intro": "Bei GameWasters respektieren wir deine Privatsphaere. Diese Richtlinie erklaert, wie wir deine Informationen sammeln, verwenden und schuetzen.",
+    "collectTitle": "Informationen, die wir sammeln",
+    "collectItems": [
+      "Deine oeffentliche Steam-ID (verschluesselt und gehasht auf unseren Servern)",
+      "Liste der Spiele in deiner Steam-Bibliothek (oeffentliche Information)",
+      "Spielzeit pro Titel (oeffentliche Information)",
+      "Genre-Praeferenzen, abgeleitet aus deiner Aktivitaet"
+    ],
+    "useTitle": "Wie wir deine Informationen verwenden",
+    "useItems": [
+      "Personalisierte Spielempfehlungen generieren",
+      "Dir relevante Angebote gemaess deinen Vorlieben zeigen",
+      "Statistiken deiner Bibliothek berechnen",
+      "Unsere Empfehlungsalgorithmen verbessern"
+    ],
+    "noSellTitle": "Was wir NICHT tun",
+    "noSellItems": [
+      "Wir verkaufen deine Informationen nicht an Dritte",
+      "Wir speichern dein Steam-Passwort nicht",
+      "Wir greifen nicht auf private Kontoinformationen zu",
+      "Wir senden keine unerwuenschten E-Mails"
+    ],
+    "securityTitle": "Sicherheit",
+    "securityDesc": "Deine Steam-ID wird vor der Speicherung mit AES-256-GCM verschluesselt. Wir bewahren nur einen irreversiblen Hash als Identifikator auf.",
+    "deleteTitle": "Datenloeschung",
+    "deleteDesc": "Du kannst die Loeschung deiner Daten beantragen, indem du uns kontaktierst. Wir loeschen alle deine Informationen innerhalb von 30 Tagen.",
+    "back": "Zurueck zur Startseite"
+  },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "lastUpdated": "Letzte Aktualisierung",
+    "intro": "Durch die Nutzung von GameWasters stimmst du diesen Nutzungsbedingungen zu.",
+    "serviceTitle": "Der Dienst",
+    "serviceDesc": "GameWasters ist ein kostenloses Tool, das deine Steam-Bibliothek analysiert, um Empfehlungen und Angebotsbenachrichtigungen anzubieten.",
+    "accountTitle": "Dein Konto",
+    "accountItems": [
+      "Du musst ein gueltiges Steam-Konto haben, um den Dienst zu nutzen",
+      "Dein Steam-Profil muss oeffentlich sein, damit wir auf deine Bibliothek zugreifen koennen",
+      "Du bist dafuer verantwortlich, dein Sitzungstoken sicher aufzubewahren"
+    ],
+    "limitationsTitle": "Einschraenkungen",
+    "limitationsItems": [
+      "Empfehlungen werden automatisch generiert und sind moeglicherweise nicht perfekt",
+      "Angezeigte Preise sind moeglicherweise nicht in Echtzeit aktualisiert",
+      "Wir garantieren keine kontinuierliche Dienstverfuegbarkeit"
+    ],
+    "ipTitle": "Geistiges Eigentum",
+    "ipDesc": "Steam, Steam-Logos und Spieldaten sind Eigentum der Valve Corporation. GameWasters ist nicht mit Valve verbunden.",
+    "changesTitle": "Aenderungen der Bedingungen",
+    "changesDesc": "Wir behalten uns das Recht vor, diese Bedingungen zu aendern. Aenderungen werden auf dieser Seite veroeffentlicht.",
+    "back": "Zurueck zur Startseite"
+  },
+  "profile": {
+    "loading": "Profil wird geladen...",
+    "score": "Punktzahl",
+    "ofFriends": "von {count} Freunden",
+    "totalPlaytime": "Gesamtspielzeit",
+    "gamesPlayed": "Gespielte Spiele",
+    "inventoryValue": "Inventarwert",
+    "achievementsUnlocked": "Erfolge freigeschaltet",
+    "achievementsTitle": "Erfolge",
+    "avgCompletion": "Durchschn. Abschluss",
+    "perfectGames": "Perfekte Spiele",
+    "total": "Total",
+    "leaderboardTitle": "Freunde-Rangliste",
+    "you": "du",
+    "pts": "Pkt",
+    "topGameTitle": "Dein meistgespieltes Spiel"
+  },
+  "lang": {
+    "name": "Deutsch"
+  },
+  "genres": {
+    "action": "Action",
+    "adventure": "Abenteuer",
+    "casual": "Casual",
+    "indie": "Indie",
+    "massively multiplayer": "Massives Mehrspieler",
+    "rpg": "RPG",
+    "simulation": "Simulation",
+    "strategy": "Strategie",
+    "sports": "Sport",
+    "racing": "Rennspiel",
+    "free to play": "Kostenlos spielbar",
+    "early access": "Frueher Zugriff",
+    "violent": "Gewalt",
+    "gore": "Blut und Gore",
+    "nudity": "Nacktheit",
+    "sexual content": "Sexuelle Inhalte",
+    "utilities": "Dienstprogramme",
+    "animation & modeling": "Animation und Modellierung",
+    "audio production": "Audioproduktion",
+    "design & illustration": "Design und Illustration",
+    "education": "Bildung",
+    "photo editing": "Bildbearbeitung",
+    "software training": "Software-Schulung",
+    "video production": "Videoproduktion",
+    "web publishing": "Web-Publishing",
+    "game development": "Spieleentwicklung"
+  }
+}

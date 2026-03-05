@@ -1,0 +1,179 @@
+{
+  "header": {
+    "stats": "Statistics",
+    "profile": "Profile",
+    "logout": "Log out"
+  },
+  "hero": {
+    "title1": "Discover your next favorite game.",
+    "title2": "At the best price.",
+    "subtitle": "We use Artificial Intelligence and Collaborative Filtering based on your",
+    "subtitleBold": "game library",
+    "subtitle2": "to recommend personalized games. We also show store deals and especially the best discounts."
+  },
+  "features": {
+    "svdTitle": "Current Deals",
+    "svdDesc": "Here you can see the current deals available in the Steam store.",
+    "playtimeTitle": "Personalized Recommendations",
+    "playtimeDesc": "We analyze your real playtime hours, the most accurate metric to understand your tastes as a player.",
+    "dealsTitle": "Best Deals",
+    "dealsDesc": "We show you the best current store deals. Only discounts of 50% or more!",
+    "historicalButton": "View best deals"
+  },
+  "deals": {
+    "recommendationsTitle": "Steam Deals",
+    "dealsTitle": "Current Deals",
+    "syncing": "Syncing library...",
+    "viewDeal": "View Deal",
+    "viewGame": "View Game",
+    "appId": "App ID",
+    "prev": "Previous",
+    "next": "Next",
+    "personalizedDeals": "Current Deals",
+    "historicalTab": "Best Deals",
+    "historicalTitle": "Historical Lows (>= 50%)",
+    "topSteamAffinity": "Personalized Recommendations",
+    "topSteamTitle": "Personalized Recommendations",
+    "score": "Score",
+    "playingNow": "playing now",
+    "popularityUnavailable": "Popularity unavailable",
+    "genresUnavailable": "Genres unavailable",
+    "noTopSteam": "No personalized recommendations available yet for your profile.",
+    "noHistorical": "No historical low deals available right now."
+  },
+  "stats": {
+    "title": "Your Statistics",
+    "subtitle": "Analysis based on your real Steam playtime.",
+    "topGenresTitle": "Your Favorite Genres",
+    "noGenreData": "Not enough data to analyze your genres.",
+    "totalPlaytimeTitle": "Total Time",
+    "hours": "hours",
+    "games": "games",
+    "avgPerGame": "Average per game",
+    "mostPlayedGenre": "Most played genre",
+    "libraryValueTitle": "Library Value",
+    "estimatedValue": "Estimated value",
+    "potentialSavings": "Potential savings",
+    "gamesOnSale": "Games on sale",
+    "activityTitle": "Recent Activity",
+    "last2Weeks": "Last 2 weeks",
+    "activeGames": "Active games",
+    "avgSession": "Avg. session",
+    "comingSoon": "More stats coming soon",
+    "comingSoonDesc": "We're working on integrating more data about your gaming habits, such as never-played games, completed achievements, and more."
+  },
+  "footer": {
+    "description": "Smart recommendations based on your real playtime.",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "resources": "Resources",
+    "steamStore": "Steam Store",
+    "about": "About",
+    "rights": "All rights reserved.",
+    "disclaimer": "Not affiliated with Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation."
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated",
+    "intro": "At GameWasters, we respect your privacy. This policy explains how we collect, use, and protect your information.",
+    "collectTitle": "Information we collect",
+    "collectItems": [
+      "Your public Steam ID (encrypted and hashed on our servers)",
+      "List of games in your Steam library (public information)",
+      "Playtime per title (public information)",
+      "Genre preferences derived from your activity"
+    ],
+    "useTitle": "How we use your information",
+    "useItems": [
+      "Generate personalized game recommendations",
+      "Show you relevant deals according to your tastes",
+      "Calculate your library statistics",
+      "Improve our recommendation algorithms"
+    ],
+    "noSellTitle": "What we do NOT do",
+    "noSellItems": [
+      "We do not sell your information to third parties",
+      "We do not store your Steam password",
+      "We do not access private account information",
+      "We do not send unsolicited emails"
+    ],
+    "securityTitle": "Security",
+    "securityDesc": "Your Steam ID is encrypted with AES-256-GCM before storage. We only keep an irreversible hash as identifier.",
+    "deleteTitle": "Data deletion",
+    "deleteDesc": "You can request deletion of your data by contacting us. We will delete all your information within 30 days.",
+    "back": "Back to home"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated",
+    "intro": "By using GameWasters, you agree to these terms of service.",
+    "serviceTitle": "The Service",
+    "serviceDesc": "GameWasters is a free tool that analyzes your Steam library to offer recommendations and deal alerts.",
+    "accountTitle": "Your account",
+    "accountItems": [
+      "You must have a valid Steam account to use the service",
+      "Your Steam profile must be public so we can access your library",
+      "You are responsible for keeping your session token secure"
+    ],
+    "limitationsTitle": "Limitations",
+    "limitationsItems": [
+      "Recommendations are generated automatically and may not be perfect",
+      "Displayed prices may not be updated in real time",
+      "We do not guarantee continuous service availability"
+    ],
+    "ipTitle": "Intellectual Property",
+    "ipDesc": "Steam, Steam logos, and game data are property of Valve Corporation. GameWasters is not affiliated with Valve.",
+    "changesTitle": "Changes to terms",
+    "changesDesc": "We reserve the right to modify these terms. Changes will be posted on this page.",
+    "back": "Back to home"
+  },
+  "profile": {
+    "loading": "Loading profile...",
+    "score": "Score",
+    "ofFriends": "of {count} friends",
+    "totalPlaytime": "Total playtime",
+    "gamesPlayed": "Games played",
+    "inventoryValue": "Inventory value",
+    "achievementsUnlocked": "Achievements unlocked",
+    "achievementsTitle": "Achievements",
+    "avgCompletion": "Avg. completion",
+    "perfectGames": "Perfect games",
+    "total": "Total",
+    "leaderboardTitle": "Friends leaderboard",
+    "you": "you",
+    "pts": "pts",
+    "topGameTitle": "Your most played game"
+  },
+  "lang": {
+    "name": "English"
+  },
+  "genres": {
+    "action": "Action",
+    "adventure": "Adventure",
+    "casual": "Casual",
+    "indie": "Indie",
+    "massively multiplayer": "Massively Multiplayer",
+    "rpg": "RPG",
+    "simulation": "Simulation",
+    "strategy": "Strategy",
+    "sports": "Sports",
+    "racing": "Racing",
+    "free to play": "Free to Play",
+    "early access": "Early Access",
+    "violent": "Violent",
+    "gore": "Gore",
+    "nudity": "Nudity",
+    "sexual content": "Sexual Content",
+    "utilities": "Utilities",
+    "animation & modeling": "Animation & Modeling",
+    "audio production": "Audio Production",
+    "design & illustration": "Design & Illustration",
+    "education": "Education",
+    "photo editing": "Photo Editing",
+    "software training": "Software Training",
+    "video production": "Video Production",
+    "web publishing": "Web Publishing",
+    "game development": "Game Development"
+  }
+}
