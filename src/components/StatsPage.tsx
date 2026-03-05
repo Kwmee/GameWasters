@@ -5,6 +5,12 @@ import { useI18n } from '../i18n/useI18n';
 import { Navigate } from 'react-router-dom';
 import { Clock, DollarSign, Activity, Gamepad2 } from 'lucide-react';
 
+const EUR_FORMATTER = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+
 function StatCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="bg-[#171a21] rounded-xl p-6 shadow-lg border border-[#2a475e]">
@@ -39,7 +45,7 @@ export default function StatsPage() {
   const avgPerGame = totalGames > 0 ? Math.round(totalPlaytime / totalGames) : 0;
   const mostPlayed = topGenres.length > 0 ? topGenres[0].name : '-';
 
-  const estimatedValue = totalGames * 18.5;
+  const estimatedValue = totalGames * 17.2;
   const potentialSavings = Math.round(estimatedValue * 0.35);
 
   const recentHours = Math.round(totalPlaytime * 0.08);
@@ -77,8 +83,8 @@ export default function StatsPage() {
             icon={<DollarSign className="w-6 h-6 text-[#a4d007]" />}
             title={t('stats.libraryValueTitle')}
           >
-            <StatRow label={t('stats.estimatedValue')} value={`$${estimatedValue.toFixed(0)}`} accent />
-            <StatRow label={t('stats.potentialSavings')} value={`$${potentialSavings}`} />
+            <StatRow label={t('stats.estimatedValue')} value={EUR_FORMATTER.format(estimatedValue)} accent />
+            <StatRow label={t('stats.potentialSavings')} value={EUR_FORMATTER.format(potentialSavings)} />
             <StatRow label={t('stats.gamesOnSale')} value={Math.round(totalGames * 0.25).toString()} />
           </StatCard>
 

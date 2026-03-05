@@ -70,6 +70,7 @@ export class SteamService {
   private apiKey: string;
   private baseUrl = 'http://api.steampowered.com';
   private storeUrl = 'https://store.steampowered.com/api';
+  private readonly storeCountryCode = 'es';
 
   constructor() {
     this.apiKey = config.STEAM_API_KEY;
@@ -156,7 +157,7 @@ export class SteamService {
    */
   public async getSpecials(): Promise<any[]> {
     try {
-      const response = await fetch(`${this.storeUrl}/featuredcategories/`);
+      const response = await fetch(`${this.storeUrl}/featuredcategories/?cc=${this.storeCountryCode}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       
@@ -193,7 +194,7 @@ export class SteamService {
 
     if (this.apiKey === 'mock_steam_key') {
       appIds.forEach(id => {
-        results[id] = { currency: 'USD', initial: 3999, final: 1999, discount_percent: 50 };
+        results[id] = { currency: 'EUR', initial: 3999, final: 1999, discount_percent: 50 };
       });
       return results;
     }
@@ -208,7 +209,7 @@ export class SteamService {
       }
 
       try {
-        const response = await fetch(`${this.storeUrl}/appdetails?appids=${appId}&filters=price_overview`);
+        const response = await fetch(`${this.storeUrl}/appdetails?appids=${appId}&filters=price_overview&cc=${this.storeCountryCode}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();

@@ -475,7 +475,7 @@ app.get("/api/user/profile", async (req, res) => {
       : 0;
     const perfectGames = achievements.filter((a) => a.completionPercent === 100).length;
 
-    const estimatedInventoryValue = Math.round(totalGames * 12.5 + gamesPlayed * 5);
+    const estimatedInventoryValue = Math.round(totalGames * 11.63 + gamesPlayed * 4.65);
 
     const playerScore = Math.round(
       (totalPlaytimeHours * 0.3) +
