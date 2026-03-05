@@ -2,7 +2,6 @@ import express from "express";
 import session from "express-session";
 import jwt from "jsonwebtoken";
 import { config } from "./src/config";
-import { initializeDatabase } from "./src/db/sqlite";
 import {
   getEncryptedSteamIdByHashedId,
   upsertUser,
@@ -40,8 +39,7 @@ function escapeForJs(str: string): string {
 }
 
 async function startServer() {
-  initializeDatabase();
-
+  // DB se inicializa de forma perezosa al primer uso (evita fallos en Vercel en rutas que no usan DB)
   const app = express();
   const PORT = 3000;
 
@@ -236,7 +234,11 @@ async function startServer() {
   };
 
   app.get("/api/auth/steam/url", (_req, res) => {
-    const appUrl = config.APP_URL || `http://localhost:${PORT}`;
+    const appUrl =
+      config.APP_URL ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : `http://localhost:${PORT}`);
     const returnUrl = `${appUrl}/api/auth/steam/return`;
     const realm = appUrl;
 
