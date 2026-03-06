@@ -61,8 +61,8 @@ export default function GameImage({
         className={`${className} bg-gradient-to-br from-[#1b2838] to-[#2a475e] flex items-center justify-center text-center px-2`}
       >
         <div className="flex flex-col items-center justify-center leading-tight">
-          <span className="text-[11px] uppercase tracking-wide text-gray-300 font-semibold">{t('images.noImage')}</span>
-          <span className="text-sm text-white font-bold mt-1 line-clamp-2">{title}</span>
+          <span className="text-sm text-white font-bold line-clamp-2">{title}</span>
+          <span className="text-[11px] uppercase tracking-wide text-gray-300 font-semibold mt-1">{t('images.noImage')}</span>
         </div>
       </div>
     );
