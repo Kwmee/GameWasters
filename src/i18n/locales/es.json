@@ -145,6 +145,9 @@
     "pts": "pts",
     "topGameTitle": "Tu juego mas jugado"
   },
+  "images": {
+    "noImage": "Sin imagen"
+  },
   "lang": {
     "name": "Espanol"
   },

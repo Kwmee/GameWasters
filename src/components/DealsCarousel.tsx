@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useI18n } from '../i18n/useI18n';
 import type { Deal } from '../store/useStore';
+import GameImage from './GameImage';
 
 interface Props {
   deals: Deal[];
@@ -79,11 +80,11 @@ export default function DealsCarousel({ deals }: Props) {
             className="snap-start shrink-0 w-[350px] sm:w-[375px] bg-[#171a21] rounded-xl overflow-hidden border border-[#2a475e] hover:border-[#66c0f4] hover:shadow-[0_0_15px_rgba(102,192,244,0.2)] transition-all flex flex-col"
           >
             <div className="relative overflow-hidden">
-              <img
-                src={deal.image}
-                alt={deal.title}
+              <GameImage
+                title={deal.title}
+                appId={deal.steamId}
+                primarySrc={deal.image}
                 className="w-full h-44 object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-500"
-                referrerPolicy="no-referrer"
                 loading="lazy"
               />
               <div className="absolute top-2 right-2 bg-[#4c6b22] text-[#a4d007] px-2.5 py-0.5 text-sm font-bold rounded shadow-lg">

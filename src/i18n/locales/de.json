@@ -145,6 +145,9 @@
     "pts": "Pkt",
     "topGameTitle": "Dein meistgespieltes Spiel"
   },
+  "images": {
+    "noImage": "Kein Bild"
+  },
   "lang": {
     "name": "Deutsch"
   },

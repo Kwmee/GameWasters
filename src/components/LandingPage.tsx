@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SteamLoginButton from './SteamLoginButton';
 import DealsCarousel from './DealsCarousel';
+import GameImage from './GameImage';
 import { useStore } from '../store/useStore';
 import { useI18n } from '../i18n/useI18n';
 import { Sparkles, Clock, TrendingDown, Flame } from 'lucide-react';
@@ -258,11 +259,10 @@ export default function LandingPage() {
             {topSteamRecommendations.map((game) => (
               <div key={game.appId} className="bg-[#171a21] rounded-xl overflow-hidden border border-[#2a475e] hover:border-[#66c0f4] hover:shadow-[0_0_15px_rgba(102,192,244,0.2)] transition-all group flex flex-col">
                 <div className="relative overflow-hidden">
-                  <img
-                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg`}
-                    alt={game.title}
+                  <GameImage
+                    title={game.title}
+                    appId={game.appId}
                     className="w-full h-60 object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 right-3 bg-[#2a475e] text-[#66c0f4] px-3 py-1 text-xs font-bold rounded shadow-lg">
                     {t('deals.score')} {game.score.toFixed(3)}

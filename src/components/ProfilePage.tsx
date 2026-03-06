@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { useI18n } from '../i18n/useI18n';
 import { Navigate } from 'react-router-dom';
 import { Trophy, Crown, Swords, Package, Clock, Gamepad2, Medal, Users } from 'lucide-react';
+import GameImage from './GameImage';
 
 const EUR_FORMATTER = new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -143,11 +144,14 @@ export default function ProfilePage() {
           <div className="space-y-3">
             {achievements.topGames.map((game) => (
               <div key={game.appid} className="flex items-center gap-3">
-                <img
-                  src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/capsule_184x69.jpg`}
-                  alt={game.gameName}
+                <GameImage
+                  title={game.gameName}
+                  appId={game.appid}
+                  primarySrc={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/capsule_184x69.jpg`}
+                  fallbackSources={[
+                    `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`,
+                  ]}
                   className="w-16 h-6 object-cover rounded"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="flex-grow min-w-0">
                   <p className="text-sm text-white truncate">{game.gameName}</p>
