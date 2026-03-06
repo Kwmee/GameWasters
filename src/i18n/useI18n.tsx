@@ -20,6 +20,7 @@ const translations: Record<Locale, Record<string, any>> = { en, es, pt, de, fr }
 interface I18nContext {
   locale: Locale;
   t: (key: string) => any;
+  translateGenre: (genreName: string) => string;
   setLocale: (locale: Locale) => void;
 }
 
@@ -44,8 +45,19 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
 
+  const translateGenre = useCallback(
+    (genreName: string) => {
+      const translated = getNestedValue(
+        translations[locale],
+        `genres.${genreName.toLowerCase()}`
+      );
+      return typeof translated === 'string' ? translated : genreName;
+    },
+    [locale]
+  );
+
   return (
-    <I18nCtx.Provider value={{ locale, t, setLocale }}>
+    <I18nCtx.Provider value={{ locale, t, translateGenre, setLocale }}>
       {children}
     </I18nCtx.Provider>
   );

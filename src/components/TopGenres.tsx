@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/useI18n';
 import { BarChart3 } from 'lucide-react';
 
 export default function TopGenres() {
-  const { t } = useI18n();
+  const { t, translateGenre } = useI18n();
   const { isAuthenticated, topGenres, setTopGenres, token } = useStore();
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +45,7 @@ export default function TopGenres() {
             <div key={genre.name} className="relative">
               <div className="flex justify-between text-sm mb-1">
                 <span className="font-medium text-[#c7d5e0]">
-                  {index + 1}. {genre.name}
+                  {index + 1}. {translateGenre(genre.name)}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">{genre.gamesCount} {t('stats.games')}</span>

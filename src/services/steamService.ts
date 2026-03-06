@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { config } from '../config';
+import { config } from '../config.js';
 import crypto from 'crypto';
 
 // Esquema de validación estricta (equivalente a Pydantic)

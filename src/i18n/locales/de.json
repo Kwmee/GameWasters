@@ -5,22 +5,23 @@
     "logout": "Abmelden"
   },
   "hero": {
-    "title1": "Entdecke dein nachstes Lieblingsspiel.",
+    "title1": "Entdecke dein naechstes Lieblingsspiel.",
     "title2": "Zum besten Preis.",
     "subtitle": "Wir nutzen Kuenstliche Intelligenz und kollaboratives Filtern basierend auf deiner",
-    "subtitleBold": "Spielzeit",
-    "subtitle2": "um dir personalisierte Angebote zu empfehlen und historische Tiefstpreise zu verfolgen."
+    "subtitleBold": "Spielebibliothek",
+    "subtitle2": "um personalisierte Spiele zu empfehlen. Ausserdem zeigen wir Store-Angebote und besonders die besten Rabatte."
   },
   "features": {
-    "svdTitle": "SVD-Empfehlungen",
-    "svdDesc": "7-Latentfaktor-Algorithmus optimiert fuer Steam. Wir empfehlen nicht das Populaere, sondern das, was du lieben wirst.",
-    "playtimeTitle": "Spielzeit-basiert",
-    "playtimeDesc": "Wir analysieren deine echten Spielstunden, die ehrlichste Metrik, um deine wahren Spielvorlieben zu verstehen.",
-    "dealsTitle": "Historische Tiefstpreise",
-    "dealsDesc": "Integration mit IsThereAnyDeal, damit du genau dann kaufst, wenn der Preis den Tiefpunkt erreicht."
+    "svdTitle": "Aktuelle Angebote",
+    "svdDesc": "Hier kannst du die aktuell verfuegbaren Angebote im Steam Store sehen.",
+    "playtimeTitle": "Personalisierte Empfehlungen",
+    "playtimeDesc": "Wir analysieren deine echte Spielzeit, die genaueste Metrik, um deine Vorlieben als Spieler zu verstehen.",
+    "dealsTitle": "Beste Angebote",
+    "dealsDesc": "Wir zeigen dir die besten aktuellen Store-Angebote. Nur Rabatte von 50% oder mehr!",
+    "historicalButton": "Beste Angebote ansehen"
   },
   "deals": {
-    "recommendationsTitle": "Empfehlungen fuer dich",
+    "recommendationsTitle": "Angebote auf Steam",
     "dealsTitle": "Aktuelle Angebote",
     "syncing": "Bibliothek wird synchronisiert...",
     "viewDeal": "Angebot ansehen",
@@ -28,21 +29,24 @@
     "appId": "App ID",
     "prev": "Zurueck",
     "next": "Weiter",
-    "personalizedDeals": "Personalisierte Angebote",
-    "topSteamAffinity": "Top Steam nach Affinitaet",
-    "topSteamTitle": "Top Steam Empfehlungen",
+    "personalizedDeals": "Aktuelle Angebote",
+    "historicalTab": "Beste Angebote",
+    "historicalTitle": "Historische Tiefstpreise (>= 50%)",
+    "topSteamAffinity": "Personalisierte Empfehlungen",
+    "topSteamTitle": "Personalisierte Empfehlungen",
     "score": "Score",
     "playingNow": "spielen gerade",
     "popularityUnavailable": "Beliebtheit nicht verfuegbar",
     "genresUnavailable": "Genres nicht verfuegbar",
-    "noTopSteam": "Noch keine Top-Steam-Empfehlungen fuer dein Profil verfuegbar."
+    "noTopSteam": "Noch keine personalisierten Empfehlungen fuer dein Profil verfuegbar.",
+    "noHistorical": "Aktuell sind keine historischen Tiefstpreis-Angebote verfuegbar."
   },
   "stats": {
     "title": "Deine Statistiken",
     "subtitle": "Analyse basierend auf deiner echten Steam-Spielzeit.",
-    "topGenresTitle": "Deine Top-Genres",
-    "noGenreData": "Nicht genuegend Spieldaten, um deine Genres zu analysieren.",
-    "totalPlaytimeTitle": "Gesamtspielzeit",
+    "topGenresTitle": "Deine Lieblingsgenres",
+    "noGenreData": "Nicht genug Daten, um deine Genres zu analysieren.",
+    "totalPlaytimeTitle": "Gesamtzeit",
     "hours": "Stunden",
     "games": "Spiele",
     "avgPerGame": "Durchschnitt pro Spiel",
@@ -55,11 +59,11 @@
     "last2Weeks": "Letzte 2 Wochen",
     "activeGames": "Aktive Spiele",
     "avgSession": "Durchschn. Sitzung",
-    "comingSoon": "Weitere Statistiken folgen",
-    "comingSoonDesc": "Wir arbeiten daran, mehr Daten ueber deine Spielgewohnheiten zu integrieren, wie nie gespielte Spiele, abgeschlossene Erfolge und mehr."
+    "comingSoon": "Mehr Statistiken bald",
+    "comingSoonDesc": "Wir arbeiten daran, mehr Daten ueber deine Spielgewohnheiten zu integrieren, z. B. nie gespielte Spiele, abgeschlossene Erfolge und mehr."
   },
   "footer": {
-    "description": "Intelligente Spielempfehlungen basierend auf deiner echten Spielzeit.",
+    "description": "Intelligente Empfehlungen basierend auf deiner echten Spielzeit.",
     "legal": "Rechtliches",
     "privacy": "Datenschutzrichtlinie",
     "terms": "Nutzungsbedingungen",
@@ -83,7 +87,7 @@
     "useTitle": "Wie wir deine Informationen verwenden",
     "useItems": [
       "Personalisierte Spielempfehlungen generieren",
-      "Dir relevante Angebote basierend auf deinem Geschmack zeigen",
+      "Dir relevante Angebote gemaess deinen Vorlieben zeigen",
       "Statistiken deiner Bibliothek berechnen",
       "Unsere Empfehlungsalgorithmen verbessern"
     ],
@@ -92,12 +96,12 @@
       "Wir verkaufen deine Informationen nicht an Dritte",
       "Wir speichern dein Steam-Passwort nicht",
       "Wir greifen nicht auf private Kontoinformationen zu",
-      "Wir senden keine unaufgeforderten E-Mails"
+      "Wir senden keine unerwuenschten E-Mails"
     ],
     "securityTitle": "Sicherheit",
     "securityDesc": "Deine Steam-ID wird vor der Speicherung mit AES-256-GCM verschluesselt. Wir bewahren nur einen irreversiblen Hash als Identifikator auf.",
     "deleteTitle": "Datenloeschung",
-    "deleteDesc": "Du kannst die Loeschung deiner Daten beantragen, indem du uns kontaktierst. Wir werden alle deine Informationen innerhalb von 30 Tagen loeschen.",
+    "deleteDesc": "Du kannst die Loeschung deiner Daten beantragen, indem du uns kontaktierst. Wir loeschen alle deine Informationen innerhalb von 30 Tagen.",
     "back": "Zurueck zur Startseite"
   },
   "terms": {
@@ -105,7 +109,7 @@
     "lastUpdated": "Letzte Aktualisierung",
     "intro": "Durch die Nutzung von GameWasters stimmst du diesen Nutzungsbedingungen zu.",
     "serviceTitle": "Der Dienst",
-    "serviceDesc": "GameWasters ist ein kostenloses Tool, das deine Steam-Bibliothek analysiert, um Spielempfehlungen und Angebotsbenachrichtigungen anzubieten.",
+    "serviceDesc": "GameWasters ist ein kostenloses Tool, das deine Steam-Bibliothek analysiert, um Empfehlungen und Angebotsbenachrichtigungen anzubieten.",
     "accountTitle": "Dein Konto",
     "accountItems": [
       "Du musst ein gueltiges Steam-Konto haben, um den Dienst zu nutzen",
@@ -135,7 +139,7 @@
     "achievementsTitle": "Erfolge",
     "avgCompletion": "Durchschn. Abschluss",
     "perfectGames": "Perfekte Spiele",
-    "total": "Gesamt",
+    "total": "Total",
     "leaderboardTitle": "Freunde-Rangliste",
     "you": "du",
     "pts": "Pkt",
@@ -143,5 +147,33 @@
   },
   "lang": {
     "name": "Deutsch"
+  },
+  "genres": {
+    "action": "Action",
+    "adventure": "Abenteuer",
+    "casual": "Casual",
+    "indie": "Indie",
+    "massively multiplayer": "Massives Mehrspieler",
+    "rpg": "RPG",
+    "simulation": "Simulation",
+    "strategy": "Strategie",
+    "sports": "Sport",
+    "racing": "Rennspiel",
+    "free to play": "Kostenlos spielbar",
+    "early access": "Frueher Zugriff",
+    "violent": "Gewalt",
+    "gore": "Blut und Gore",
+    "nudity": "Nacktheit",
+    "sexual content": "Sexuelle Inhalte",
+    "utilities": "Dienstprogramme",
+    "animation & modeling": "Animation und Modellierung",
+    "audio production": "Audioproduktion",
+    "design & illustration": "Design und Illustration",
+    "education": "Bildung",
+    "photo editing": "Bildbearbeitung",
+    "software training": "Software-Schulung",
+    "video production": "Videoproduktion",
+    "web publishing": "Web-Publishing",
+    "game development": "Spieleentwicklung"
   }
 }

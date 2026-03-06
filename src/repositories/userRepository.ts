@@ -1,4 +1,4 @@
-import { db } from "../db/sqlite";
+import { db } from "../db/sqlite.js";
 
 export interface UpsertUserInput {
   hashedSteamId: string;

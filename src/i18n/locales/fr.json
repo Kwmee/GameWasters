@@ -8,19 +8,20 @@
     "title1": "Decouvrez votre prochain jeu prefere.",
     "title2": "Au meilleur prix.",
     "subtitle": "Nous utilisons l'Intelligence Artificielle et le Filtrage Collaboratif base sur votre",
-    "subtitleBold": "temps de jeu",
-    "subtitle2": "pour vous recommander des offres personnalisees et suivre les prix historiques les plus bas."
+    "subtitleBold": "bibliotheque de jeux",
+    "subtitle2": "pour recommander des jeux personnalises. Nous montrons aussi les offres du magasin et surtout les meilleures reductions."
   },
   "features": {
-    "svdTitle": "Recommandations SVD",
-    "svdDesc": "Algorithme a 7 facteurs latents optimise pour Steam. Nous ne recommandons pas le populaire, nous recommandons ce que vous aimerez.",
-    "playtimeTitle": "Base sur le Playtime",
-    "playtimeDesc": "Nous analysons vos heures de jeu reelles, la metrique la plus honnete pour comprendre vos vrais gouts de joueur.",
-    "dealsTitle": "Prix Historiques Bas",
-    "dealsDesc": "Integration avec IsThereAnyDeal pour vous assurer d'acheter au moment exact ou le prix atteint son minimum."
+    "svdTitle": "Offres Actuelles",
+    "svdDesc": "Ici, vous pouvez voir les offres actuelles disponibles sur la boutique Steam.",
+    "playtimeTitle": "Recommandations Personnalisees",
+    "playtimeDesc": "Nous analysons vos heures reelles de jeu, la metrique la plus precise pour comprendre vos gouts de joueur.",
+    "dealsTitle": "Meilleures Offres",
+    "dealsDesc": "Nous vous montrons les meilleures offres actuelles de la boutique. Seulement des reductions de 50% ou plus !",
+    "historicalButton": "Voir les meilleures offres"
   },
   "deals": {
-    "recommendationsTitle": "Recommandations pour vous",
+    "recommendationsTitle": "Offres sur Steam",
     "dealsTitle": "Offres du Moment",
     "syncing": "Synchronisation de la bibliotheque...",
     "viewDeal": "Voir l'Offre",
@@ -28,21 +29,24 @@
     "appId": "App ID",
     "prev": "Precedent",
     "next": "Suivant",
-    "personalizedDeals": "Offres personnalisees",
-    "topSteamAffinity": "Top Steam par affinite",
-    "topSteamTitle": "Recommandations Top Steam",
+    "personalizedDeals": "Offres actuelles",
+    "historicalTab": "Meilleures Offres",
+    "historicalTitle": "Minimos Historiques (>= 50%)",
+    "topSteamAffinity": "Recommandations personnalisees",
+    "topSteamTitle": "Recommandations Personnalisees",
     "score": "Score",
     "playingNow": "jouent maintenant",
     "popularityUnavailable": "Popularite non disponible",
     "genresUnavailable": "Genres non disponibles",
-    "noTopSteam": "Pas encore de recommandations Top Steam disponibles pour votre profil."
+    "noTopSteam": "Aucune recommandation personnalisee disponible pour votre profil pour le moment.",
+    "noHistorical": "Aucune offre a minimum historique n'est disponible pour le moment."
   },
   "stats": {
     "title": "Vos Statistiques",
     "subtitle": "Analyse basee sur votre temps de jeu reel sur Steam.",
-    "topGenresTitle": "Vos Genres Preferes",
-    "noGenreData": "Pas assez de donnees de jeu pour analyser vos genres.",
-    "totalPlaytimeTitle": "Temps de Jeu Total",
+    "topGenresTitle": "Vos Genres Favoris",
+    "noGenreData": "Il n'y a pas assez de donnees pour analyser vos genres.",
+    "totalPlaytimeTitle": "Temps Total",
     "hours": "heures",
     "games": "jeux",
     "avgPerGame": "Moyenne par jeu",
@@ -59,7 +63,7 @@
     "comingSoonDesc": "Nous travaillons a integrer plus de donnees sur vos habitudes de jeu, comme les jeux jamais joues, les succes completes et plus."
   },
   "footer": {
-    "description": "Recommandations de jeux intelligentes basees sur votre temps de jeu reel.",
+    "description": "Recommandations intelligentes basees sur votre temps de jeu reel.",
     "legal": "Mentions legales",
     "privacy": "Politique de Confidentialite",
     "terms": "Conditions d'Utilisation",
@@ -82,8 +86,8 @@
     ],
     "useTitle": "Comment nous utilisons vos informations",
     "useItems": [
-      "Generer des recommandations de jeux personnalisees",
-      "Vous montrer des offres pertinentes basees sur vos gouts",
+      "Generer des recommandations personnalisees de jeux",
+      "Vous montrer des offres pertinentes selon vos gouts",
       "Calculer les statistiques de votre bibliotheque",
       "Ameliorer nos algorithmes de recommandation"
     ],
@@ -91,12 +95,12 @@
     "noSellItems": [
       "Nous ne vendons pas vos informations a des tiers",
       "Nous ne stockons pas votre mot de passe Steam",
-      "Nous n'accetons pas aux informations privees de votre compte",
+      "Nous n'accedons pas aux informations privees de votre compte",
       "Nous n'envoyons pas d'emails non sollicites"
     ],
     "securityTitle": "Securite",
     "securityDesc": "Votre Steam ID est chiffre avec AES-256-GCM avant stockage. Nous ne conservons qu'un hash irreversible comme identifiant.",
-    "deleteTitle": "Suppression des Donnees",
+    "deleteTitle": "Suppression des donnees",
     "deleteDesc": "Vous pouvez demander la suppression de vos donnees en nous contactant. Nous supprimerons toutes vos informations dans un delai de 30 jours.",
     "back": "Retour a l'accueil"
   },
@@ -105,8 +109,8 @@
     "lastUpdated": "Derniere mise a jour",
     "intro": "En utilisant GameWasters, vous acceptez ces conditions d'utilisation.",
     "serviceTitle": "Le Service",
-    "serviceDesc": "GameWasters est un outil gratuit qui analyse votre bibliotheque Steam pour offrir des recommandations de jeux et des alertes de promotions.",
-    "accountTitle": "Votre Compte",
+    "serviceDesc": "GameWasters est un outil gratuit qui analyse votre bibliotheque Steam pour offrir des recommandations et des alertes de promotions.",
+    "accountTitle": "Votre compte",
     "accountItems": [
       "Vous devez avoir un compte Steam valide pour utiliser le service",
       "Votre profil Steam doit etre public pour que nous puissions acceder a votre bibliotheque",
@@ -120,7 +124,7 @@
     ],
     "ipTitle": "Propriete Intellectuelle",
     "ipDesc": "Steam, les logos Steam et les donnees de jeux sont la propriete de Valve Corporation. GameWasters n'est pas affilie a Valve.",
-    "changesTitle": "Modifications des Conditions",
+    "changesTitle": "Modifications des conditions",
     "changesDesc": "Nous nous reservons le droit de modifier ces conditions. Les modifications seront publiees sur cette page.",
     "back": "Retour a l'accueil"
   },
@@ -136,12 +140,40 @@
     "avgCompletion": "Moy. completion",
     "perfectGames": "Jeux parfaits",
     "total": "Total",
-    "leaderboardTitle": "Classement des Amis",
+    "leaderboardTitle": "Classement des amis",
     "you": "vous",
     "pts": "pts",
     "topGameTitle": "Votre jeu le plus joue"
   },
   "lang": {
     "name": "Francais"
+  },
+  "genres": {
+    "action": "Action",
+    "adventure": "Aventure",
+    "casual": "Casual",
+    "indie": "Independant",
+    "massively multiplayer": "Massivement multijoueur",
+    "rpg": "RPG",
+    "simulation": "Simulation",
+    "strategy": "Strategie",
+    "sports": "Sport",
+    "racing": "Course",
+    "free to play": "Gratuit",
+    "early access": "Acces anticipe",
+    "violent": "Violence",
+    "gore": "Gore",
+    "nudity": "Nudite",
+    "sexual content": "Contenu sexuel",
+    "utilities": "Utilitaires",
+    "animation & modeling": "Animation et modelisation",
+    "audio production": "Production audio",
+    "design & illustration": "Design et illustration",
+    "education": "Education",
+    "photo editing": "Retouche photo",
+    "software training": "Formation logicielle",
+    "video production": "Production video",
+    "web publishing": "Publication web",
+    "game development": "Developpement de jeux"
   }
 }

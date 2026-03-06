@@ -1,85 +1,42 @@
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
-import { config } from "../config";
+import { config } from "../config.js";
 
-const isVercel = !!process.env.VERCEL;
-const dbPath = isVercel
-  ? "/tmp/gamewasters.db"
-  : path.resolve(process.cwd(), config.SQLITE_DB_PATH);
+let _db: Database.Database | null = null;
+let _initialized = false;
 
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+function getDbPath(): string {
+  return path.resolve(process.cwd(), config.SQLITE_DB_PATH);
 }
 
-export const db = new Database(dbPath);
+function ensureDb(): Database.Database {
+  if (_db) return _db;
 
-const SCHEMA = `
-PRAGMA foreign_keys = ON;
+  const dbPath = getDbPath();
+  const dbDir = path.dirname(dbPath);
 
-CREATE TABLE IF NOT EXISTS Users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    hashed_steam_id TEXT UNIQUE NOT NULL,
-    steam_id_encrypted TEXT NOT NULL,
-    username TEXT,
-    steam_name TEXT,
-    steam_avatar TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_login DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 
-CREATE TABLE IF NOT EXISTS UserGenreStats (
-    hashed_steam_id TEXT NOT NULL,
-    genre_name TEXT NOT NULL,
-    playtime_hours INTEGER NOT NULL DEFAULT 0,
-    games_count INTEGER NOT NULL DEFAULT 0,
-    percentage INTEGER NOT NULL DEFAULT 0 CHECK(percentage >= 0 AND percentage <= 100),
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (hashed_steam_id, genre_name),
-    FOREIGN KEY (hashed_steam_id) REFERENCES Users(hashed_steam_id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Games (
-    app_id INTEGER PRIMARY KEY,
-    title TEXT NOT NULL,
-    developer TEXT,
-    publisher TEXT,
-    release_date DATE,
-    genres TEXT
-);
-
-CREATE TABLE IF NOT EXISTS OwnedGames (
-    user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE,
-    game_id INTEGER REFERENCES Games(app_id) ON DELETE CASCADE,
-    playtime_forever INTEGER DEFAULT 0,
-    playtime_2weeks INTEGER DEFAULT 0,
-    last_played DATETIME,
-    PRIMARY KEY (user_id, game_id)
-);
-
-CREATE TABLE IF NOT EXISTS Deals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game_id INTEGER REFERENCES Games(app_id) ON DELETE CASCADE,
-    current_price REAL,
-    historical_low REAL,
-    discount_percentage INTEGER,
-    url TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_ownedgames_playtime ON OwnedGames(playtime_forever DESC);
-CREATE INDEX IF NOT EXISTS idx_deals_discount ON Deals(discount_percentage DESC);
-CREATE INDEX IF NOT EXISTS idx_users_last_login ON Users(last_login DESC);
-CREATE INDEX IF NOT EXISTS idx_usergenrestats_updated ON UserGenreStats(updated_at DESC);
-`;
+  _db = new Database(dbPath);
+  return _db;
+}
 
 export function initializeDatabase(): void {
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(SCHEMA);
+  if (_initialized) return;
+  const database = ensureDb();
+  _initialized = true;
 
-  const userGenreStatsColumns = db
+  database.pragma("journal_mode = WAL");
+  database.pragma("foreign_keys = ON");
+
+  const schemaPath = path.resolve(process.cwd(), "database", "schema.sql");
+  const schema = fs.readFileSync(schemaPath, "utf-8");
+  database.exec(schema);
+
+  const userGenreStatsColumns = database
     .prepare("PRAGMA table_info(UserGenreStats)")
     .all() as Array<{ name: string }>;
   const hasGamesCount = userGenreStatsColumns.some(
@@ -87,8 +44,21 @@ export function initializeDatabase(): void {
   );
 
   if (!hasGamesCount) {
-    db.exec(
+    database.exec(
       "ALTER TABLE UserGenreStats ADD COLUMN games_count INTEGER NOT NULL DEFAULT 0",
     );
   }
 }
+
+/** Obtiene la instancia de la base de datos (inicializa en el primer uso). */
+export function getDb(): Database.Database {
+  initializeDatabase();
+  return ensureDb();
+}
+
+/** Proxy para compatibilidad: código que usa `db.prepare()` sigue funcionando sin tocar la DB hasta el primer uso. */
+export const db = new Proxy({} as Database.Database, {
+  get(_, prop: string) {
+    return (getDb() as unknown as Record<string, unknown>)[prop];
+  },
+});
