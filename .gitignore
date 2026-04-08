@@ -1,11 +1,44 @@
+# Dependencies
 node_modules/
-build/
+
+# Build outputs and coverage
 dist/
+dist-ssr/
+build/
 coverage/
-.DS_Store
-*.log
-.env*
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
 !.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime caches / deploy artifacts
+.cache/
+.tmp/
+tmp/
+.vercel/
+
+# Database artifacts
 database/*.db
 database/*.db-shm
 database/*.db-wal
+database/*.sqlite
+database/*.sqlite3
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
